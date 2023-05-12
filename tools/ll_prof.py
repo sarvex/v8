@@ -116,14 +116,14 @@ class Code(object):
     if self.other_names is None:
       self.other_names = [name]
       return
-    if not name in self.other_names:
+    if name not in self.other_names:
       self.other_names.append(name)
 
   def FullName(self):
     if self.other_names is None:
       return self.name
     self.other_names.sort()
-    return "%s (aka %s)" % (self.name, ", ".join(self.other_names))
+    return f'{self.name} (aka {", ".join(self.other_names)})'
 
   def IsUsed(self):
     return self.self_ticks > 0 or self.callee_ticks is not None
@@ -191,9 +191,9 @@ class Code(object):
       self.origin)
 
   def _GetDisasmLines(self, arch, options):
-    if self.origin == JS_ORIGIN or self.origin == JS_SNAPSHOT_ORIGIN:
+    if self.origin in [JS_ORIGIN, JS_SNAPSHOT_ORIGIN]:
       inplace = False
-      filename = options.log + ".ll"
+      filename = f"{options.log}.ll"
     else:
       inplace = True
       filename = self.origin
@@ -307,9 +307,7 @@ class CodeMap(object):
     if pc < self.min_address or pc >= self.max_address:
       return None
     page_id = CodePage.PageId(pc)
-    if page_id not in self.pages:
-      return None
-    return self.pages[page_id].Find(pc)
+    return None if page_id not in self.pages else self.pages[page_id].Find(pc)
 
 
 class CodeInfo(object):
@@ -334,8 +332,7 @@ class SnapshotLogReader(object):
     try:
       snapshot_pos_to_name = {}
       for line in log:
-        match = SnapshotLogReader._SNAPSHOT_CODE_NAME_RE.match(line)
-        if match:
+        if match := SnapshotLogReader._SNAPSHOT_CODE_NAME_RE.match(line):
           pos = int(match.group(1))
           name = match.group(2)
           snapshot_pos_to_name[pos] = name
@@ -371,8 +368,8 @@ class LogReader(object):
 
     self.arch = self.log[:self.log.find("\0")]
     self.log_pos += len(self.arch) + 1
-    assert self.arch in LogReader._ARCH_TO_POINTER_TYPE_MAP, \
-        "Unsupported architecture %s" % self.arch
+    assert (self.arch in LogReader._ARCH_TO_POINTER_TYPE_MAP
+            ), f"Unsupported architecture {self.arch}"
     pointer_type = LogReader._ARCH_TO_POINTER_TYPE_MAP[self.arch]
 
     self.code_create_struct = LogReader._DefineStruct([
@@ -489,9 +486,9 @@ class LogReader(object):
 
   @staticmethod
   def _HandleCodeConflict(old_code, new_code):
-    assert (old_code.start_address == new_code.start_address and
-            old_code.end_address == new_code.end_address), \
-        "Conficting code log entries %s and %s" % (old_code, new_code)
+    assert (old_code.start_address == new_code.start_address
+            and old_code.end_address == new_code.end_address
+            ), f"Conficting code log entries {old_code} and {new_code}"
     if old_code.name == new_code.name:
       return
     # Code object may be shared by a few functions. Collect the full
@@ -509,12 +506,16 @@ class Descriptor(object):
   }
 
   def __init__(self, fields):
+
+
+
     class TraceItem(ctypes.Structure):
       _fields_ = Descriptor.CtypesFields(fields)
 
       def __str__(self):
-        return ", ".join("%s: %s" % (field, self.__getattribute__(field))
+        return ", ".join(f"{field}: {self.__getattribute__(field)}"
                          for field, _ in TraceItem._fields_)
+
 
     self.ctype = TraceItem
 
@@ -715,8 +716,11 @@ class LibraryRepo(object):
   def HasDynamicSymbols(self, filename):
     if filename.endswith(".ko"): return False
     process = subprocess.Popen(
-      "%s -h %s" % (OBJDUMP_BIN, filename),
-      shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        f"{OBJDUMP_BIN} -h {filename}",
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
     pipe = process.stdout
     try:
       for line in pipe:
@@ -724,7 +728,7 @@ class LibraryRepo(object):
         if match and match.group(1) == 'dynsym': return True
     finally:
       pipe.close()
-    assert process.wait() == 0, "Failed to objdump -h %s" % filename
+    assert process.wait() == 0, f"Failed to objdump -h {filename}"
     return False
 
 
@@ -747,13 +751,13 @@ class LibraryRepo(object):
     # Unfortunately, section headers span two lines, so we have to
     # keep the just seen section name (from the first line in each
     # section header) in the after_section variable.
-    if self.HasDynamicSymbols(mmap_info.filename):
-      dynamic_symbols = "-T"
-    else:
-      dynamic_symbols = ""
+    dynamic_symbols = "-T" if self.HasDynamicSymbols(mmap_info.filename) else ""
     process = subprocess.Popen(
-      "%s -h -t %s -C %s" % (OBJDUMP_BIN, dynamic_symbols, mmap_info.filename),
-      shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        f"{OBJDUMP_BIN} -h -t {dynamic_symbols} -C {mmap_info.filename}",
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
     pipe = process.stdout
     after_section = None
     code_sections = set()
@@ -769,8 +773,7 @@ class LibraryRepo(object):
           after_section = None
           continue
 
-        match = OBJDUMP_SECTION_HEADER_RE.match(line)
-        if match:
+        if match := OBJDUMP_SECTION_HEADER_RE.match(line):
           after_section = match.group(1)
           continue
 
@@ -778,10 +781,8 @@ class LibraryRepo(object):
           dynamic = True
           continue
 
-        match = OBJDUMP_SYMBOL_LINE_RE.match(line)
-        if match:
+        if match := OBJDUMP_SYMBOL_LINE_RE.match(line):
           start_address = int(match.group(1), 16)
-          origin_offset = start_address
           flags = match.group(2)
           section = match.group(3)
           if section in code_sections:
@@ -790,11 +791,18 @@ class LibraryRepo(object):
             size = int(match.group(4), 16)
             name = match.group(5)
             origin = mmap_info.filename
-            code_map.Add(Code(name, start_address, start_address + size,
-                              origin, origin_offset))
+            origin_offset = start_address
+            code_map.Add(
+                Code(
+                    name,
+                    origin_offset,
+                    origin_offset + size,
+                    origin,
+                    origin_offset,
+                ))
     finally:
       pipe.close()
-    assert process.wait() == 0, "Failed to objdump %s" % mmap_info.filename
+    assert process.wait() == 0, f"Failed to objdump {mmap_info.filename}"
 
   def Tick(self, pc):
     for i, mmap_info in enumerate(self.infos):

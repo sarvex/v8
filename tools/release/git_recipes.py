@@ -81,10 +81,8 @@ class GitFailedException(Exception):
 def Strip(f):
   def new_f(*args, **kwargs):
     result = f(*args, **kwargs)
-    if result is None:
-      return result
-    else:
-      return result.strip()
+    return result if result is None else result.strip()
+
   return new_f
 
 
@@ -145,9 +143,8 @@ class GitRecipesMixin(object):
   def GitChangedFiles(self, git_hash, **kwargs):
     assert git_hash
     try:
-      files = self.Git(MakeArgs(["diff --name-only",
-                                 git_hash,
-                                 "%s^" % git_hash]), **kwargs)
+      files = self.Git(MakeArgs(["diff --name-only", git_hash, f"{git_hash}^"]),
+                       **kwargs)
       return map(str.strip, files.splitlines())
     except GitFailedException:  # pragma: no cover
       # Git fails using "^" at branch roots.
@@ -157,8 +154,8 @@ class GitRecipesMixin(object):
   @Strip
   def GitCurrentBranch(self, **kwargs):
     for line in self.Git("status -s -b -uno", **kwargs).strip().splitlines():
-      match = re.match(r"^## (.+)", line)
-      if match: return match.group(1)
+      if match := re.match(r"^## (.+)", line):
+        return match[1]
     raise Exception("Couldn't find curent branch.")  # pragma: no cover
 
   @Strip
@@ -169,7 +166,7 @@ class GitRecipesMixin(object):
     if n > 0:
       args.append("-%d" % n)
     if format:
-      args.append("--format=%s" % format)
+      args.append(f"--format={format}")
     if grep:
       args.append("--grep=\"%s\"" % grep.replace("\"", "\\\""))
     if reverse:
@@ -177,7 +174,7 @@ class GitRecipesMixin(object):
     if git_hash:
       args.append(git_hash)
     if parent_hash:
-      args.append("%s^" % parent_hash)
+      args.append(f"{parent_hash}^")
     args.append(branch)
     return self.Git(MakeArgs(args), **kwargs)
 
@@ -245,7 +242,6 @@ class GitRecipesMixin(object):
     self.Git("fetch origin", **kwargs)
 
   @Strip
-  # Copied from bot_update.py and modified for svn-like numbers only.
   def GetCommitPositionNumber(self, git_hash, **kwargs):
     """Dumps the 'git' log for a specific revision and parses out the commit
     position number.
@@ -258,18 +254,11 @@ class GitRecipesMixin(object):
     git_log = self.GitLog(format='%B', n=1, git_hash=git_hash, **kwargs)
     footer_map = GetCommitMessageFooterMap(git_log)
 
-    # Search for commit position metadata
-    value = footer_map.get(COMMIT_POSITION_FOOTER_KEY)
-    if value:
-      match = COMMIT_POSITION_RE.match(value)
-      if match:
+    if value := footer_map.get(COMMIT_POSITION_FOOTER_KEY):
+      if match := COMMIT_POSITION_RE.match(value):
         return match.group(2)
 
-    # Extract the svn revision from 'git-svn' metadata
-    value = footer_map.get(GIT_SVN_ID_FOOTER_KEY)
-    if value:
-      match = GIT_SVN_ID_RE.match(value)
-      if match:
+    if value := footer_map.get(GIT_SVN_ID_FOOTER_KEY):
+      if match := GIT_SVN_ID_RE.match(value):
         return match.group(1)
-    raise GitFailedException("Couldn't determine commit position for %s" %
-                             git_hash)
+    raise GitFailedException(f"Couldn't determine commit position for {git_hash}")

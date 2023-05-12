@@ -95,14 +95,14 @@ def Update():
   # Make sure we have a key pair for signing binaries.
   privkeyfile = os.path.expanduser("~/.ssh/v8_dtest")
   if not os.path.exists(privkeyfile):
-    _Cmd("ssh-keygen -t rsa -f %s -N '' -q" % privkeyfile)
-  fingerprint = subprocess.check_output("ssh-keygen -lf %s" % privkeyfile,
+    _Cmd(f"ssh-keygen -t rsa -f {privkeyfile} -N '' -q")
+  fingerprint = subprocess.check_output(f"ssh-keygen -lf {privkeyfile}",
                                         shell=True)
   fingerprint = fingerprint.split(" ")[1].replace(":", "")[:16]
-  pubkeyfile = os.path.join(trusted_dir, "%s.pem" % fingerprint)
+  pubkeyfile = os.path.join(trusted_dir, f"{fingerprint}.pem")
   if (not os.path.exists(pubkeyfile) or
       os.path.getmtime(pubkeyfile) < os.path.getmtime(privkeyfile)):
-    _Cmd("openssl rsa -in %s -out %s -pubout" % (privkeyfile, pubkeyfile))
+    _Cmd(f"openssl rsa -in {privkeyfile} -out {pubkeyfile} -pubout")
     with open(pubkeyfile, "a") as f:
       f.write(fingerprint + "\n")
     datafile = os.path.join(data_dir, "mypubkey")
@@ -112,24 +112,24 @@ def Update():
   # Check out or update the server implementation in the current directory.
   testrunner_dir = os.path.join(ROOT, "testrunner")
   if os.path.exists(os.path.join(testrunner_dir, "server/daemon.py")):
-    _Cmd("cd %s; svn up" % testrunner_dir)
+    _Cmd(f"cd {testrunner_dir}; svn up")
   else:
     path = ("http://v8.googlecode.com/svn/branches/bleeding_edge/"
             "tools/testrunner")
-    _Cmd("svn checkout --force %s %s" % (path, testrunner_dir))
+    _Cmd(f"svn checkout --force {path} {testrunner_dir}")
 
   # Update this very script.
   path = ("http://v8.googlecode.com/svn/branches/bleeding_edge/"
           "tools/test-server.py")
   scriptname = os.path.abspath(sys.argv[0])
-  _Cmd("svn cat %s > %s" % (path, scriptname))
+  _Cmd(f"svn cat {path} > {scriptname}")
 
   # Check out or update V8.
   v8_dir = os.path.join(ROOT, "v8")
   if os.path.exists(v8_dir):
-    _Cmd("cd %s; git fetch" % v8_dir)
+    _Cmd(f"cd {v8_dir}; git fetch")
   else:
-    _Cmd("git clone git://github.com/v8/v8.git %s" % v8_dir)
+    _Cmd(f"git clone git://github.com/v8/v8.git {v8_dir}")
 
   print("Finished.")
 
@@ -203,7 +203,7 @@ if __name__ == "__main__":
       else:
         daemon = main.Server(PIDFILE, ROOT)
         response = daemon.CopyToTrusted(filename)
-      print("Added certificate %s to trusted certificates." % response)
+      print(f"Added certificate {response} to trusted certificates.")
     else:
       print("Unknown command")
       _PrintUsage()

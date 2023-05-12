@@ -108,23 +108,18 @@ class JavaScriptMinifier(object):
       return matched_text
     if re.match("[\"'/]", matched_text):
       return matched_text
-    m = re.match(r"var ", matched_text)
-    if m:
+    if m := re.match(r"var ", matched_text):
       var_names = matched_text[m.end():]
       var_names = re.split(r",", var_names)
       return "var " + ",".join(map(self.FindNewName, var_names))
-    m = re.match(r"(function\b[^(]*)\((.*)\)\{$", matched_text)
-    if m:
-      up_to_args = m.group(1)
-      args = m.group(2)
+    if m := re.match(r"(function\b[^(]*)\((.*)\)\{$", matched_text):
+      up_to_args = m[1]
+      args = m[2]
       args = re.split(r",", args)
       self.Push()
-      return up_to_args + "(" + ",".join(map(self.FindNewName, args)) + "){"
+      return f"{up_to_args}(" + ",".join(map(self.FindNewName, args)) + "){"
 
-    if matched_text in self.map:
-      return self.map[matched_text]
-
-    return matched_text
+    return self.map[matched_text] if matched_text in self.map else matched_text
 
   def CharFromNumber(self, number):
     """A single-digit base-52 encoding using a-zA-Z."""
@@ -160,7 +155,7 @@ class JavaScriptMinifier(object):
         new_identifier = (
             self.CharFromNumber(identifier_second_char - 1) + new_identifier)
       self.identifier_counter += 1
-      if not new_identifier in self.seen_identifiers:
+      if new_identifier not in self.seen_identifiers:
         break
 
     self.map[var_name] = new_identifier
@@ -184,9 +179,7 @@ class JavaScriptMinifier(object):
       return entire_match
     if re.match(r'".*"$', entire_match):
       return entire_match
-    if re.match(r"/.+/$", entire_match):
-      return entire_match
-    return replacement
+    return entire_match if re.match(r"/.+/$", entire_match) else replacement
 
   def JSMinify(self, text):
     """The main entry point.  Takes a text and returns a compressed version.
@@ -204,8 +197,7 @@ class JavaScriptMinifier(object):
     for line in re.split(r"\n", text):
       line = line.replace("\t", " ")
       if self.in_comment:
-        m = re.search(r"\*/", line)
-        if m:
+        if m := re.search(r"\*/", line):
           line = line[m.end():]
           self.in_comment = False
         else:
@@ -215,8 +207,7 @@ class JavaScriptMinifier(object):
       if not self.in_comment:
         line = re.sub(r"/\*.*?\*/", " ", line)
         line = re.sub(r"//.*", "", line)
-        m = re.search(r"/\*", line)
-        if m:
+        if m := re.search(r"/\*", line):
           line = line[:m.start()]
           self.in_comment = True
 
@@ -261,10 +252,7 @@ class JavaScriptMinifier(object):
       # like a variable where in fact it is a literal string.  We use the
       # presence or absence of a question mark to try to distinguish between
       # this case and the ternary operator: "condition ? iftrue : iffalse".
-      if re.search(r"\?", line):
-        block_trailing_colon = r""
-      else:
-        block_trailing_colon = r"(?![:\w$%])"
+      block_trailing_colon = r"" if re.search(r"\?", line) else r"(?![:\w$%])"
       # Variable use.  Cannot follow a period precede a colon.
       variable_use_regexp = r"(?<![.\w$%])[\w$%]+" + block_trailing_colon
       line = re.sub("|".join([double_quoted_string,

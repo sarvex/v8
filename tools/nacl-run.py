@@ -38,8 +38,9 @@ import sys
 import tempfile
 
 def Check(output, errors):
-  failed = any([s.startswith('/system/bin/sh:') or s.startswith('ANDROID')
-                for s in output.split('\n')])
+  failed = any(
+      s.startswith('/system/bin/sh:') or s.startswith('ANDROID')
+      for s in output.split('\n'))
   return 1 if failed else 0
 
 def Execute(cmdline):
@@ -74,9 +75,8 @@ def Escape(arg):
 def WriteToTemporaryFile(data):
   (fd, fname) = tempfile.mkstemp()
   os.close(fd)
-  tmp_file = open(fname, "w")
-  tmp_file.write(data)
-  tmp_file.close()
+  with open(fname, "w") as tmp_file:
+    tmp_file.write(data)
   return fname
 
 def GetNaClArchFromNexe(nexe):
@@ -104,12 +104,12 @@ def GetNaClResources(nexe):
     sys.exit(1)
 
   if nacl_arch is "x86_64":
-    toolchain = platform + "_x86_glibc"
+    toolchain = f"{platform}_x86_glibc"
     sel_ldr = "sel_ldr_x86_64"
     irt = "irt_core_x86_64.nexe"
     libdir = "lib64"
   elif nacl_arch is "x86_32":
-    toolchain = platform + "_x86_glibc"
+    toolchain = f"{platform}_x86_glibc"
     sel_ldr = "sel_ldr_x86_32"
     irt = "irt_core_x86_32.nexe"
     libdir = "lib32"
@@ -117,7 +117,7 @@ def GetNaClResources(nexe):
     print("NaCl V8 ARM support is not ready yet.")
     sys.exit(1)
   else:
-    print("Invalid nexe %s with NaCl arch %s" % (nexe, nacl_arch))
+    print(f"Invalid nexe {nexe} with NaCl arch {nacl_arch}")
     sys.exit(1)
 
   nacl_sel_ldr = os.path.join(nacl_sdk_dir, "tools", sel_ldr)
@@ -127,7 +127,7 @@ def GetNaClResources(nexe):
 
 def Main():
   if (len(sys.argv) == 1):
-    print("Usage: %s <command-to-run-on-device>" % sys.argv[0])
+    print(f"Usage: {sys.argv[0]} <command-to-run-on-device>")
     return 1
 
   args = [Escape(arg) for arg in sys.argv[1:]]
@@ -140,8 +140,7 @@ def Main():
   # -B <irt>: load the IRT
   command = ' '.join([nacl_sel_ldr, '-c', '-c', '-a', '-B', nacl_irt, '--'] +
                      args)
-  error_code = Execute(command)
-  return error_code
+  return Execute(command)
 
 if __name__ == '__main__':
   sys.exit(Main())

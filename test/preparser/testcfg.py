@@ -54,15 +54,15 @@ class PreparserTestSuite(testsuite.TestSuite):
       rule_match = rule_regex.match(line)
       if not rule_match: continue
       expects = []
-      if (rule_match.group(2)):
-        expects += [rule_match.group(2)]
-        if (rule_match.group(3)):
-          expects += [rule_match.group(3), rule_match.group(4)]
-      expectations_map[rule_match.group(1)] = " ".join(expects)
+      if rule_match[2]:
+        expects += [rule_match[2]]
+        if rule_match[3]:
+          expects += [rule_match[3], rule_match[4]]
+      expectations_map[rule_match[1]] = " ".join(expects)
     return expectations_map
 
   def _ParsePythonTestTemplates(self, result, filename):
-    pathname = os.path.join(self.root, filename + ".pyt")
+    pathname = os.path.join(self.root, f"{filename}.pyt")
     def Test(name, source, expectation, extra_flags=[]):
       source = source.replace("\n", " ")
       testname = os.path.join(filename, name)
@@ -72,15 +72,18 @@ class PreparserTestSuite(testsuite.TestSuite):
       flags += extra_flags
       test = testcase.TestCase(self, testname, flags=flags)
       result.append(test)
+
     def Template(name, source):
       def MkTest(replacement, expectation):
         testname = name
         testsource = source
         for key in replacement.keys():
-          testname = testname.replace("$" + key, replacement[key]);
-          testsource = testsource.replace("$" + key, replacement[key]);
+          testname = testname.replace(f"${key}", replacement[key]);
+          testsource = testsource.replace(f"${key}", replacement[key]);
         Test(testname, testsource, expectation)
+
       return MkTest
+
     execfile(pathname, {"Test": Test, "Template": Template})
 
   def ListTests(self, context):
@@ -92,7 +95,7 @@ class PreparserTestSuite(testsuite.TestSuite):
     filenames.sort()
     for f in filenames:
       throws = expectations.get(f, None)
-      flags = [f + ".js"]
+      flags = [f"{f}.js"]
       if throws:
         flags += ["--throws"]
       test = testcase.TestCase(self, f, flags=flags)
@@ -116,7 +119,7 @@ class PreparserTestSuite(testsuite.TestSuite):
         result += match.strip().split()
       result += context.mode_flags
       result = [x for x in result if x not in INVALID_FLAGS]
-      result.append(os.path.join(self.root, testcase.path + ".js"))
+      result.append(os.path.join(self.root, f"{testcase.path}.js"))
       return testcase.flags + result
     return testcase.flags
 

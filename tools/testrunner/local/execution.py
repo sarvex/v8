@@ -205,9 +205,7 @@ class Runner(object):
     self.indicator.Starting()
     self._RunInternal(jobs)
     self.indicator.Done()
-    if self.failed or self.remaining:
-      return 1
-    return 0
+    return 1 if self.failed or self.remaining else 0
 
   def _RunInternal(self, jobs):
     pool = Pool(jobs)

@@ -57,14 +57,14 @@ def ProcessLogFile(filename, options):
       logreader = csv.reader(logfile)
 
       print('JOB "v8"')
-      print('DATE "%s"' % time.asctime(time.localtime()))
+      print(f'DATE "{time.asctime(time.localtime())}"')
       print('SAMPLE_UNIT "seconds"')
       print('VALUE_UNIT "bytes"')
 
       for row in logreader:
         if row[0] == 'heap-sample-begin' and row[1] == 'Heap':
           sample_time = float(row[3])/1000.0
-          if first_call_time == None:
+          if first_call_time is None:
             first_call_time = sample_time
           sample_time -= first_call_time
           print('BEGIN_SAMPLE %.2f' % sample_time)

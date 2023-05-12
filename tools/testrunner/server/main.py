@@ -123,7 +123,7 @@ class Server(daemon.Daemon):
 
   def Shutdown(self):
     with open(self.relative_perf_filename, "w") as f:
-      f.write("%s" % self.relative_perf)
+      f.write(f"{self.relative_perf}")
     self.presence_daemon.shutdown()
     self.presence_daemon.server_close()
     self.local_handler.shutdown()
@@ -194,7 +194,7 @@ class Server(daemon.Daemon):
     return fingerprint
 
   def _PubkeyFilename(self, pubkey_fingerprint):
-    return os.path.join(self.root, "trusted", "%s.pem" % pubkey_fingerprint)
+    return os.path.join(self.root, "trusted", f"{pubkey_fingerprint}.pem")
 
   def IsTrusted(self, pubkey_fingerprint):
     return os.path.exists(self._PubkeyFilename(pubkey_fingerprint))

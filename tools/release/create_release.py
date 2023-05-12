@@ -21,7 +21,7 @@ class Preparation(Step):
       "+refs/pending/*:refs/pending/*",
       "+refs/pending-tags/*:refs/pending-tags/*",
     ]
-    self.Git("fetch origin %s" % " ".join(fetchspecs))
+    self.Git(f'fetch origin {" ".join(fetchspecs)}')
     self.GitCheckout("origin/master")
     self.DeleteBranch("work-branch")
 
@@ -66,11 +66,10 @@ class IncrementVersion(Step):
     # The new version is not a candidate.
     self["new_candidate"] = "0"
 
-    self["version"] = "%s.%s.%s" % (self["new_major"],
-                                    self["new_minor"],
-                                    self["new_build"])
+    self[
+        "version"] = f'{self["new_major"]}.{self["new_minor"]}.{self["new_build"]}'
 
-    print ("Incremented version to %s" % self["version"])
+    print(f'Incremented version to {self["version"]}')
 
 
 class DetectLastRelease(Step):
@@ -88,11 +87,12 @@ class PrepareChangeLog(Step):
     late changes to the LOG flag. Note: This is brittle to future changes of
     the web page name or structure.
     """
-    match = re.search(r"^Review URL: https://codereview\.chromium\.org/(\d+)$",
-                      body, flags=re.M)
-    if match:
-      cl_url = ("https://codereview.chromium.org/%s/description"
-                % match.group(1))
+    if match := re.search(
+        r"^Review URL: https://codereview\.chromium\.org/(\d+)$",
+        body,
+        flags=re.M,
+    ):
+      cl_url = f"https://codereview.chromium.org/{match.group(1)}/description"
       try:
         # Fetch from Rietveld but only retry once with one second delay since
         # there might be many revisions.
@@ -105,9 +105,8 @@ class PrepareChangeLog(Step):
     self["date"] = self.GetDate()
     output = "%s: Version %s\n\n" % (self["date"], self["version"])
     TextToFile(output, self.Config("CHANGELOG_ENTRY_FILE"))
-    commits = self.GitLog(format="%H",
-        git_hash="%s..%s" % (self["last_push_master"],
-                             self["push_hash"]))
+    commits = self.GitLog(
+        format="%H", git_hash=f'{self["last_push_master"]}..{self["push_hash"]}')
 
     # Cache raw commit messages.
     commit_messages = [
@@ -149,7 +148,7 @@ class EditChangeLog(Step):
     changelog_entry = "\n".join(map(Fill80, changelog_entry.splitlines()))
     changelog_entry = changelog_entry.lstrip()
 
-    if changelog_entry == "":  # pragma: no cover
+    if not changelog_entry:  # pragma: no cover
       self.Die("Empty ChangeLog entry.")
 
     # Safe new change log for adding it later to the candidates patch.
@@ -161,7 +160,7 @@ class MakeBranch(Step):
 
   def RunStep(self):
     self.Git("reset --hard origin/master")
-    self.Git("checkout -b work-branch %s" % self["push_hash"])
+    self.Git(f'checkout -b work-branch {self["push_hash"]}')
     self.GitCheckoutFile(CHANGELOG_FILE, self["latest_version"])
     self.GitCheckoutFile(VERSION_FILE, self["latest_version"])
 
@@ -191,12 +190,13 @@ class CommitBranch(Step):
     text = FileToText(self.Config("CHANGELOG_ENTRY_FILE"))
 
     # Remove date and trailing white space.
-    text = re.sub(r"^%s: " % self["date"], "", text.rstrip())
+    text = re.sub(f'^{self["date"]}: ', "", text.rstrip())
 
     # Remove indentation and merge paragraphs into single long lines, keeping
     # empty lines between them.
     def SplitMapJoin(split_text, fun, join_text):
       return lambda text: join_text.join(map(fun, text.split(split_text)))
+
     text = SplitMapJoin(
         "\n\n", SplitMapJoin("\n", str.strip, " "), "\n\n")(text)
 
@@ -234,17 +234,16 @@ class TagRevision(Step):
       print ("Dry run. Tagging \"%s\" with %s" %
              (self["commit_title"], self["version"]))
     else:
-      self.vc.Tag(self["version"],
-                  "origin/%s" % self["version"],
-                  self["commit_title"])
+      self.vc.Tag(self["version"], f'origin/{self["version"]}', self["commit_title"])
 
 
 class CleanUp(Step):
   MESSAGE = "Done!"
 
   def RunStep(self):
-    print("Congratulations, you have successfully created version %s."
-          % self["version"])
+    print(
+        f'Congratulations, you have successfully created version {self["version"]}.'
+    )
 
     self.GitCheckout("origin/master")
     self.DeleteBranch("work-branch")

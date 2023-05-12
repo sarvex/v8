@@ -14,18 +14,13 @@ def Run(x):
 
 class PoolTest(unittest.TestCase):
   def testNormal(self):
-    results = set()
     pool = Pool(3)
-    for result in pool.imap_unordered(Run, [[x] for x in range(0, 10)]):
-      results.add(result)
+    results = set(pool.imap_unordered(Run, [[x] for x in range(0, 10)]))
     self.assertEquals(set(range(0, 10)), results)
 
   def testException(self):
-    results = set()
     pool = Pool(3)
-    for result in pool.imap_unordered(Run, [[x] for x in range(0, 12)]):
-      # Item 10 will not appear in results due to an internal exception.
-      results.add(result)
+    results = set(pool.imap_unordered(Run, [[x] for x in range(0, 12)]))
     expect = set(range(0, 12))
     expect.remove(10)
     self.assertEquals(expect, results)

@@ -77,14 +77,11 @@ class TestSuite(object):
     return ".js"
 
   def status_file(self):
-    return "%s/%s.status" % (self.root, self.name)
+    return f"{self.root}/{self.name}.status"
 
   # Used in the status file and for stdout printing.
   def CommonTestName(self, testcase):
-    if utils.IsWindows():
-      return testcase.path.replace("\\", "/")
-    else:
-      return testcase.path
+    return testcase.path.replace("\\", "/") if utils.IsWindows() else testcase.path
 
   def ListTests(self, context):
     raise NotImplementedError
@@ -166,10 +163,10 @@ class TestSuite(object):
 
     for rule in self.rules:
       if rule not in used_rules:
-        print("Unused rule: %s -> %s" % (rule, self.rules[rule]))
+        print(f"Unused rule: {rule} -> {self.rules[rule]}")
     for rule in self.wildcards:
       if rule not in used_rules:
-        print("Unused rule: %s -> %s" % (rule, self.wildcards[rule]))
+        print(f"Unused rule: {rule} -> {self.wildcards[rule]}")
 
   def FilterTestCasesByArgs(self, args):
     filtered = []
@@ -222,7 +219,7 @@ class TestSuite(object):
 
   def HasUnexpectedOutput(self, testcase):
     outcome = self.GetOutcome(testcase)
-    return not outcome in (testcase.outcomes or [statusfile.PASS])
+    return outcome not in (testcase.outcomes or [statusfile.PASS])
 
   def StripOutputForTransmit(self, testcase):
     if not self.HasUnexpectedOutput(testcase):
@@ -264,10 +261,9 @@ class GoogleTestSuite(TestSuite):
     return tests
 
   def GetFlagsForTestCase(self, testcase, context):
-    return (testcase.flags + ["--gtest_filter=" + testcase.path] +
-            ["--gtest_random_seed=%s" % context.random_seed] +
-            ["--gtest_print_time=0"] +
-            context.mode_flags)
+    return ((testcase.flags + [f"--gtest_filter={testcase.path}"] +
+             [f"--gtest_random_seed={context.random_seed}"]) +
+            ["--gtest_print_time=0"]) + context.mode_flags
 
   def shell(self):
     return self.name

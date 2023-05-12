@@ -37,18 +37,17 @@ from testrunner.local import utils
 from testrunner.objects import testcase
 
 
-SINON_TAG = '1.7.3'
 SINON_NAME = 'sinon'
 SINON_FILENAME = 'sinon.js'
-SINON_URL = 'http://sinonjs.org/releases/sinon-' + SINON_TAG + '.js'
+SINON_TAG = '1.7.3'
+SINON_URL = f'http://sinonjs.org/releases/sinon-{SINON_TAG}.js'
 SINON_HASH = 'b7ab4dd9a1a2cf0460784af3728ad15caf4bbea923f680c5abde5c8332f35984'
 
 TEST_TAG = '2.0.3'
-TEST_ARCHIVE_TOP = 'promises-tests-' + TEST_TAG
+TEST_ARCHIVE_TOP = f'promises-tests-{TEST_TAG}'
 TEST_NAME = 'promises-tests'
-TEST_ARCHIVE = TEST_NAME + '.tar.gz'
-TEST_URL = 'https://github.com/promises-aplus/promises-tests/archive/' + \
-    TEST_TAG + '.tar.gz'
+TEST_ARCHIVE = f'{TEST_NAME}.tar.gz'
+TEST_URL = f'https://github.com/promises-aplus/promises-tests/archive/{TEST_TAG}.tar.gz'
 TEST_ARCHIVE_HASH = \
     'e446ca557ac5836dd439fecd19689c243a28b1d5a6644dd7fed4274d0fa67270'
 
@@ -79,12 +78,12 @@ class PromiseAplusTestSuite(testsuite.TestSuite):
   def GetFlagsForTestCase(self, testcase, context):
     return (testcase.flags + context.mode_flags + ['--harmony'] +
             self.helper_files_pre +
-            [os.path.join(self.test_files_root, testcase.path + '.js')] +
-            self.helper_files_post)
+            [os.path.join(self.test_files_root, f'{testcase.path}.js')
+             ]) + self.helper_files_post
 
   def GetSourceForTest(self, testcase):
-    filename = os.path.join(self.root, TEST_NAME,
-                            'lib', 'tests', testcase.path + '.js')
+    filename = os.path.join(self.root, TEST_NAME, 'lib', 'tests',
+                            f'{testcase.path}.js')
     with open(filename) as f:
       return f.read()
 
@@ -94,8 +93,7 @@ class PromiseAplusTestSuite(testsuite.TestSuite):
   def IsFailureOutput(self, output, testpath):
     if output.exit_code != 0:
       return True
-    return not 'All tests have run.' in output.stdout or \
-           'FAIL:' in output.stdout
+    return 'All tests have run.' not in output.stdout or 'FAIL:' in output.stdout
 
   def DownloadTestData(self):
     archive = os.path.join(self.root, TEST_ARCHIVE)

@@ -69,8 +69,7 @@ def AppendToFile(text, file_name):
 
 def LinesInFile(file_name):
   with open(file_name) as f:
-    for line in f:
-      yield line
+    yield from f
 
 
 def FileToText(file_name):
@@ -124,11 +123,11 @@ def MakeChangeLogBody(commit_messages, auto_format=False):
     raw_title = re.sub(r"(\.|\?|!)$", "", title)
     bug_reference = MakeChangeLogBugReference(body)
     space = " " if bug_reference else ""
-    result += "%s\n" % Fill80("%s%s%s." % (raw_title, space, bug_reference))
+    result += "%s\n" % Fill80(f"{raw_title}{space}{bug_reference}.")
 
     # Append the commit's author for reference if not in auto-format mode.
     if not auto_format:
-      result += "%s\n" % Fill80("(%s)" % author.strip())
+      result += "%s\n" % Fill80(f"({author.strip()})")
 
     result += "\n"
   return result
@@ -145,13 +144,15 @@ def MakeChangeLogBugReference(body):
     ref = re.match(r"^BUG[ \t]*=[ \t]*(.+)$", text.strip())
     if not ref:
       return
-    for bug in ref.group(1).split(","):
+    for bug in ref[1].split(","):
       bug = bug.strip()
       match = re.match(r"^v8:(\d+)$", bug)
-      if match: v8bugs.append(int(match.group(1)))
+      if match:
+        v8bugs.append(int(match[1]))
       else:
         match = re.match(r"^(?:chromium:)?(\d+)$", bug)
-        if match: crbugs.append(int(match.group(1)))
+        if match:
+          crbugs.append(int(match[1]))
 
   # Add issues to crbugs and v8bugs.
   map(AddIssues, body.splitlines())
@@ -164,15 +165,12 @@ def MakeChangeLogBugReference(body):
   def FormatIssues(prefix, bugs):
     if len(bugs) > 0:
       plural = "s" if len(bugs) > 1 else ""
-      bug_groups.append("%sissue%s %s" % (prefix, plural, ", ".join(bugs)))
+      bug_groups.append(f'{prefix}issue{plural} {", ".join(bugs)}')
 
   FormatIssues("", v8bugs)
   FormatIssues("Chromium ", crbugs)
 
-  if len(bug_groups) > 0:
-    return "(%s)" % ", ".join(bug_groups)
-  else:
-    return ""
+  return f'({", ".join(bug_groups)})' if bug_groups else ""
 
 
 def SortingKey(version):
@@ -338,20 +336,20 @@ class GitInterface(VCInterface):
     if name.startswith('refs/'):
       return name
     if name in ["candidates", "master"]:
-      return "refs/remotes/origin/%s" % name
+      return f"refs/remotes/origin/{name}"
     try:
       # Check if branch is in heads.
-      if self.step.Git("show-ref refs/remotes/origin/%s" % name).strip():
-        return "refs/remotes/origin/%s" % name
+      if self.step.Git(f"show-ref refs/remotes/origin/{name}").strip():
+        return f"refs/remotes/origin/{name}"
     except GitFailedException:
       pass
     try:
       # Check if branch is in branch-heads.
-      if self.step.Git("show-ref refs/remotes/branch-heads/%s" % name).strip():
-        return "refs/remotes/branch-heads/%s" % name
+      if self.step.Git(f"show-ref refs/remotes/branch-heads/{name}").strip():
+        return f"refs/remotes/branch-heads/{name}"
     except GitFailedException:
       pass
-    self.Die("Can't find remote of %s" % name)
+    self.Die(f"Can't find remote of {name}")
 
   def Tag(self, tag, remote, message):
     # Wait for the commit to appear. Assumes unique commit message titles (this
@@ -363,15 +361,16 @@ class GitInterface(VCInterface):
       commit = self.step.GitLog(n=1, format="%H", grep=message, branch=remote)
       if commit:
         break
-      print("The commit has not replicated to git. Waiting for %s seconds." %
-            wait_interval)
+      print(
+          f"The commit has not replicated to git. Waiting for {wait_interval} seconds."
+      )
       self.step._side_effect_handler.Sleep(wait_interval)
     else:
       self.step.Die("Couldn't determine commit for setting the tag. Maybe the "
                     "git updater is lagging behind?")
 
-    self.step.Git("tag %s %s" % (tag, commit))
-    self.step.Git("push origin %s" % tag)
+    self.step.Git(f"tag {tag} {commit}")
+    self.step.Git(f"push origin {tag}")
 
   def CLLand(self):
     self.step.GitCLLand()
@@ -476,7 +475,7 @@ class Step(GitRecipesMixin):
         "git", args, prefix, pipe, cwd=cwd or self.default_cwd)
     result = self.Retry(cmd, retry_on, [5, 30])
     if result is None:
-      raise GitFailedException("'git %s' failed." % args)
+      raise GitFailedException(f"'git {args}' failed.")
     return result
 
   def Editor(self, args):
@@ -553,7 +552,7 @@ class Step(GitRecipesMixin):
     self.GitDeleteBranch(self._config["BRANCHNAME"])
 
     # Clean up all temporary files.
-    for f in glob.iglob("%s*" % self._config["PERSISTFILE_BASENAME"]):
+    for f in glob.iglob(f'{self._config["PERSISTFILE_BASENAME"]}*'):
       if os.path.isfile(f):
         os.remove(f)
       if os.path.isdir(f):
@@ -563,8 +562,9 @@ class Step(GitRecipesMixin):
     def ReadAndPersist(var_name, def_name):
       match = re.match(r"^#define %s\s+(\d*)" % def_name, line)
       if match:
-        value = match.group(1)
-        self["%s%s" % (prefix, var_name)] = value
+        value = match[1]
+        self[f"{prefix}{var_name}"] = value
+
     for line in LinesInFile(os.path.join(self.default_cwd, VERSION_FILE)):
       for (var_name, def_name) in [("major", "V8_MAJOR_VERSION"),
                                    ("minor", "V8_MINOR_VERSION"),
@@ -606,11 +606,8 @@ class Step(GitRecipesMixin):
       self.WaitForResolvingConflicts(patch_file)
 
   def GetVersionTag(self, revision):
-    tag = self.Git("describe --tags %s" % revision).strip()
-    if VERSION_RE.match(tag):
-      return tag
-    else:
-      return None
+    tag = self.Git(f"describe --tags {revision}").strip()
+    return tag if VERSION_RE.match(tag) else None
 
   def GetRecentReleases(self, max_age):
     # Make sure tags are fetched.
@@ -664,51 +661,51 @@ class Step(GitRecipesMixin):
     assert latest_hash
 
     title = self.GitLog(n=1, format="%s", git_hash=latest_hash)
-    match = PUSH_MSG_GIT_RE.match(title)
-    if match:
+    if match := PUSH_MSG_GIT_RE.match(title):
       # Legacy: In the old process there's one level of indirection. The
       # version is on the candidates branch and points to the real release
       # base on master through the commit message.
       return match.group("git_rev")
-    match = PUSH_MSG_NEW_RE.match(title)
-    if match:
+    if match := PUSH_MSG_NEW_RE.match(title):
       # This is a new-style v8 version branched from master. The commit
       # "latest_hash" is the version-file change. Its parent is the release
       # base on master.
-      return self.GitLog(n=1, format="%H", git_hash="%s^" % latest_hash)
+      return self.GitLog(n=1, format="%H", git_hash=f"{latest_hash}^")
 
-    self.Die("Unknown latest release: %s" % latest_hash)
+    self.Die(f"Unknown latest release: {latest_hash}")
 
   def ArrayToVersion(self, prefix):
-    return ".".join([self[prefix + "major"],
-                     self[prefix + "minor"],
-                     self[prefix + "build"],
-                     self[prefix + "patch"]])
+    return ".".join([
+        self[f"{prefix}major"],
+        self[f"{prefix}minor"],
+        self[f"{prefix}build"],
+        self[f"{prefix}patch"],
+    ])
 
   def StoreVersion(self, version, prefix):
     version_parts = version.split(".")
     if len(version_parts) == 3:
       version_parts.append("0")
     major, minor, build, patch = version_parts
-    self[prefix + "major"] = major
-    self[prefix + "minor"] = minor
-    self[prefix + "build"] = build
-    self[prefix + "patch"] = patch
+    self[f"{prefix}major"] = major
+    self[f"{prefix}minor"] = minor
+    self[f"{prefix}build"] = build
+    self[f"{prefix}patch"] = patch
 
   def SetVersion(self, version_file, prefix):
     output = ""
     for line in FileToText(version_file).splitlines():
       if line.startswith("#define V8_MAJOR_VERSION"):
-        line = re.sub("\d+$", self[prefix + "major"], line)
+        line = re.sub("\d+$", self[f"{prefix}major"], line)
       elif line.startswith("#define V8_MINOR_VERSION"):
-        line = re.sub("\d+$", self[prefix + "minor"], line)
+        line = re.sub("\d+$", self[f"{prefix}minor"], line)
       elif line.startswith("#define V8_BUILD_NUMBER"):
-        line = re.sub("\d+$", self[prefix + "build"], line)
+        line = re.sub("\d+$", self[f"{prefix}build"], line)
       elif line.startswith("#define V8_PATCH_LEVEL"):
-        line = re.sub("\d+$", self[prefix + "patch"], line)
-      elif (self[prefix + "candidate"] and
-            line.startswith("#define V8_IS_CANDIDATE_VERSION")):
-        line = re.sub("\d+$", self[prefix + "candidate"], line)
+        line = re.sub("\d+$", self[f"{prefix}patch"], line)
+      elif self[f"{prefix}candidate"] and line.startswith(
+            "#define V8_IS_CANDIDATE_VERSION"):
+        line = re.sub("\d+$", self[f"{prefix}candidate"], line)
       output += "%s\n" % line
     TextToFile(output, version_file)
 
@@ -864,18 +861,21 @@ class ScriptsBase(object):
     if not options:
       return 1
 
-    state_file = "%s-state.json" % self._config["PERSISTFILE_BASENAME"]
+    state_file = f'{self._config["PERSISTFILE_BASENAME"]}-state.json'
     if options.step == 0 and os.path.exists(state_file):
       os.remove(state_file)
 
-    steps = []
-    for (number, step_class) in enumerate([BootstrapStep] + step_classes):
-      steps.append(MakeStep(step_class, number, self._state, self._config,
-                            options, self._side_effect_handler))
-    for step in steps[options.step:]:
-      if step.Run():
-        return 0
-    return 0
+    steps = [
+        MakeStep(
+            step_class,
+            number,
+            self._state,
+            self._config,
+            options,
+            self._side_effect_handler,
+        ) for number, step_class in enumerate([BootstrapStep] + step_classes)
+    ]
+    return next((0 for step in steps[options.step:] if step.Run()), 0)
 
   def Run(self, args=None):
     return self.RunSteps(self._Steps(), args)

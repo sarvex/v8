@@ -154,7 +154,7 @@ def _CheckNoProductionCodeUsingTestOnlyFunctions(input_api, output_api):
 
   base_function_pattern = r'[ :]test::[^\s]+|ForTest(ing)?|for_test(ing)?'
   inclusion_pattern = input_api.re.compile(r'(%s)\s*\(' % base_function_pattern)
-  comment_pattern = input_api.re.compile(r'//.*(%s)' % base_function_pattern)
+  comment_pattern = input_api.re.compile(f'//.*({base_function_pattern})')
   exclusion_pattern = input_api.re.compile(
     r'::[A-Za-z0-9_]+(%s)|(%s)[^;]+\{' % (
       base_function_pattern, base_function_pattern))
@@ -212,7 +212,7 @@ def _SkipTreeCheck(input_api, output_api):
 def _CheckChangeLogFlag(input_api, output_api):
   """Checks usage of LOG= flag in the commit message."""
   results = []
-  if input_api.change.BUG and not 'LOG' in input_api.change.tags:
+  if input_api.change.BUG and 'LOG' not in input_api.change.tags:
     results.append(output_api.PresubmitError(
         'An issue reference (BUG=) requires a change log flag (LOG=). '
         'Use LOG=Y for including this commit message in the change log. '
@@ -242,20 +242,20 @@ def CheckChangeOnCommit(input_api, output_api):
 
 def GetPreferredTryMasters(project, change):
   return {
-    'tryserver.v8': {
-      'v8_linux_rel': set(['defaulttests']),
-      'v8_linux_dbg': set(['defaulttests']),
-      'v8_linux_nodcheck_rel': set(['defaulttests']),
-      'v8_linux_gcc_compile_rel': set(['defaulttests']),
-      'v8_linux64_rel': set(['defaulttests']),
-      'v8_linux64_asan_rel': set(['defaulttests']),
-      'v8_win_rel': set(['defaulttests']),
-      'v8_win_compile_dbg': set(['defaulttests']),
-      'v8_win64_rel': set(['defaulttests']),
-      'v8_mac_rel': set(['defaulttests']),
-      'v8_linux_arm_rel': set(['defaulttests']),
-      'v8_linux_arm64_rel': set(['defaulttests']),
-      'v8_android_arm_compile_rel': set(['defaulttests']),
-      'v8_linux_chromium_gn_rel': set(['defaulttests']),
-    },
+      'tryserver.v8': {
+          'v8_linux_rel': {'defaulttests'},
+          'v8_linux_dbg': {'defaulttests'},
+          'v8_linux_nodcheck_rel': {'defaulttests'},
+          'v8_linux_gcc_compile_rel': {'defaulttests'},
+          'v8_linux64_rel': {'defaulttests'},
+          'v8_linux64_asan_rel': {'defaulttests'},
+          'v8_win_rel': {'defaulttests'},
+          'v8_win_compile_dbg': {'defaulttests'},
+          'v8_win64_rel': {'defaulttests'},
+          'v8_mac_rel': {'defaulttests'},
+          'v8_linux_arm_rel': {'defaulttests'},
+          'v8_linux_arm64_rel': {'defaulttests'},
+          'v8_android_arm_compile_rel': {'defaulttests'},
+          'v8_linux_chromium_gn_rel': {'defaulttests'},
+      }
   }

@@ -74,10 +74,10 @@ class Test262TestSuite(testsuite.TestSuite):
 
   def GetFlagsForTestCase(self, testcase, context):
     return (testcase.flags + context.mode_flags + self.harness +
-            [os.path.join(self.testroot, testcase.path + ".js")])
+            [os.path.join(self.testroot, f"{testcase.path}.js")])
 
   def GetSourceForTest(self, testcase):
-    filename = os.path.join(self.testroot, testcase.path + ".js")
+    filename = os.path.join(self.testroot, f"{testcase.path}.js")
     with open(filename) as f:
       return f.read()
 
@@ -85,9 +85,7 @@ class Test262TestSuite(testsuite.TestSuite):
     return "@negative" in self.GetSourceForTest(testcase)
 
   def IsFailureOutput(self, output, testpath):
-    if output.exit_code != 0:
-      return True
-    return "FAILED!" in output.stdout
+    return True if output.exit_code != 0 else "FAILED!" in output.stdout
 
   def DownloadData(self):
     revision = TEST_262_ARCHIVE_REVISION

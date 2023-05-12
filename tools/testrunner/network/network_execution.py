@@ -45,8 +45,7 @@ from ..server import signatures
 
 def GetPeers():
   data = local_handler.LocalQuery([constants.REQUEST_PEERS])
-  if not data: return []
-  return [ peer.Peer.Unpack(p) for p in data ]
+  return [] if not data else [ peer.Peer.Unpack(p) for p in data ]
 
 
 class NetworkedRunner(execution.Runner):
@@ -77,7 +76,7 @@ class NetworkedRunner(execution.Runner):
         " | sed -e 's/.*@//'" %         # Strip away "repository@".
         (workspace, self.base_rev), shell=True).strip()
     self.patch = subprocess.check_output(
-        "cd %s; git diff %s" % (workspace, self.base_rev), shell=True)
+        f"cd {workspace}; git diff {self.base_rev}", shell=True)
     self.binaries = {}
     self.initialization_lock = threading.Lock()
     self.initialization_lock.acquire()  # Released when init is done.

@@ -68,7 +68,7 @@ class UpdateChromiumCheckout(Step):
     # Update v8 remotes.
     self.GitFetchOrigin()
 
-    self.GitCreateBranch("v8-roll-%s" % self._options.roll,
+    self.GitCreateBranch(f"v8-roll-{self._options.roll}",
                          cwd=self._options.chromium)
 
 
@@ -125,7 +125,7 @@ class CleanUp(Step):
           % self._options.roll)
 
     # Clean up all temporary files.
-    Command("rm", "-f %s*" % self._config["PERSISTFILE_BASENAME"])
+    Command("rm", f'-f {self._config["PERSISTFILE_BASENAME"]}*')
 
 
 class ChromiumRoll(ScriptsBase):

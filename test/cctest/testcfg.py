@@ -38,10 +38,7 @@ class CcTestSuite(testsuite.TestSuite):
 
   def __init__(self, name, root):
     super(CcTestSuite, self).__init__(name, root)
-    if utils.IsWindows():
-      build_dir = "build"
-    else:
-      build_dir = "out"
+    build_dir = "build" if utils.IsWindows() else "out"
     self.serdes_dir = os.path.normpath(
         os.path.join(root, "..", "..", build_dir, ".serdes"))
     if os.path.exists(self.serdes_dir):
@@ -77,10 +74,10 @@ class CcTestSuite(testsuite.TestSuite):
 
   def GetFlagsForTestCase(self, testcase, context):
     testname = testcase.path.split(os.path.sep)[-1]
-    serialization_file = os.path.join(self.serdes_dir, "serdes_" + testname)
+    serialization_file = os.path.join(self.serdes_dir, f"serdes_{testname}")
     serialization_file += ''.join(testcase.flags).replace('-', '_')
     return (testcase.flags + [testcase.path] + context.mode_flags +
-            ["--testing_serialization_file=" + serialization_file])
+            [f"--testing_serialization_file={serialization_file}"])
 
   def shell(self):
     return "cctest"

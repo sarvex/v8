@@ -85,15 +85,13 @@ def FormatTime(d):
 
 
 def PrintTestDurations(suites, overall_time):
-    # Write the times to stderr to make it easy to separate from the
-    # test output.
-    print
-    sys.stderr.write("--- Total time: %s ---\n" % FormatTime(overall_time))
-    timed_tests = [ t for s in suites for t in s.tests
-                    if t.duration is not None ]
-    timed_tests.sort(lambda a, b: cmp(b.duration, a.duration))
-    index = 1
-    for entry in timed_tests[:20]:
-      t = FormatTime(entry.duration)
-      sys.stderr.write("%4i (%s) %s\n" % (index, t, entry.GetLabel()))
-      index += 1
+  # Write the times to stderr to make it easy to separate from the
+  # test output.
+  print
+  sys.stderr.write("--- Total time: %s ---\n" % FormatTime(overall_time))
+  timed_tests = [ t for s in suites for t in s.tests
+                  if t.duration is not None ]
+  timed_tests.sort(lambda a, b: cmp(b.duration, a.duration))
+  for index, entry in enumerate(timed_tests[:20], start=1):
+    t = FormatTime(entry.duration)
+    sys.stderr.write("%4i (%s) %s\n" % (index, t, entry.GetLabel()))

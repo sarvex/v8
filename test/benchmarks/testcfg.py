@@ -42,77 +42,75 @@ class BenchmarksTestSuite(testsuite.TestSuite):
     self.testroot = root
 
   def ListTests(self, context):
-    tests = []
-    for test in [
-        "kraken/ai-astar",
-        "kraken/audio-beat-detection",
-        "kraken/audio-dft",
-        "kraken/audio-fft",
-        "kraken/audio-oscillator",
-        "kraken/imaging-darkroom",
-        "kraken/imaging-desaturate",
-        "kraken/imaging-gaussian-blur",
-        "kraken/json-parse-financial",
-        "kraken/json-stringify-tinderbox",
-        "kraken/stanford-crypto-aes",
-        "kraken/stanford-crypto-ccm",
-        "kraken/stanford-crypto-pbkdf2",
-        "kraken/stanford-crypto-sha256-iterative",
-
-        "octane/box2d",
-        "octane/code-load",
-        "octane/crypto",
-        "octane/deltablue",
-        "octane/earley-boyer",
-        "octane/gbemu-part1",
-        "octane/mandreel",
-        "octane/navier-stokes",
-        "octane/pdfjs",
-        "octane/raytrace",
-        "octane/regexp",
-        "octane/richards",
-        "octane/splay",
-        "octane/typescript",
-        "octane/zlib",
-
-        "sunspider/3d-cube",
-        "sunspider/3d-morph",
-        "sunspider/3d-raytrace",
-        "sunspider/access-binary-trees",
-        "sunspider/access-fannkuch",
-        "sunspider/access-nbody",
-        "sunspider/access-nsieve",
-        "sunspider/bitops-3bit-bits-in-byte",
-        "sunspider/bitops-bits-in-byte",
-        "sunspider/bitops-bitwise-and",
-        "sunspider/bitops-nsieve-bits",
-        "sunspider/controlflow-recursive",
-        "sunspider/crypto-aes",
-        "sunspider/crypto-md5",
-        "sunspider/crypto-sha1",
-        "sunspider/date-format-tofte",
-        "sunspider/date-format-xparb",
-        "sunspider/math-cordic",
-        "sunspider/math-partial-sums",
-        "sunspider/math-spectral-norm",
-        "sunspider/regexp-dna",
-        "sunspider/string-base64",
-        "sunspider/string-fasta",
-        "sunspider/string-tagcloud",
-        "sunspider/string-unpack-code",
-        "sunspider/string-validate-input"]:
-      tests.append(testcase.TestCase(self, test))
-    return tests
+    return [
+        testcase.TestCase(self, test) for test in [
+            "kraken/ai-astar",
+            "kraken/audio-beat-detection",
+            "kraken/audio-dft",
+            "kraken/audio-fft",
+            "kraken/audio-oscillator",
+            "kraken/imaging-darkroom",
+            "kraken/imaging-desaturate",
+            "kraken/imaging-gaussian-blur",
+            "kraken/json-parse-financial",
+            "kraken/json-stringify-tinderbox",
+            "kraken/stanford-crypto-aes",
+            "kraken/stanford-crypto-ccm",
+            "kraken/stanford-crypto-pbkdf2",
+            "kraken/stanford-crypto-sha256-iterative",
+            "octane/box2d",
+            "octane/code-load",
+            "octane/crypto",
+            "octane/deltablue",
+            "octane/earley-boyer",
+            "octane/gbemu-part1",
+            "octane/mandreel",
+            "octane/navier-stokes",
+            "octane/pdfjs",
+            "octane/raytrace",
+            "octane/regexp",
+            "octane/richards",
+            "octane/splay",
+            "octane/typescript",
+            "octane/zlib",
+            "sunspider/3d-cube",
+            "sunspider/3d-morph",
+            "sunspider/3d-raytrace",
+            "sunspider/access-binary-trees",
+            "sunspider/access-fannkuch",
+            "sunspider/access-nbody",
+            "sunspider/access-nsieve",
+            "sunspider/bitops-3bit-bits-in-byte",
+            "sunspider/bitops-bits-in-byte",
+            "sunspider/bitops-bitwise-and",
+            "sunspider/bitops-nsieve-bits",
+            "sunspider/controlflow-recursive",
+            "sunspider/crypto-aes",
+            "sunspider/crypto-md5",
+            "sunspider/crypto-sha1",
+            "sunspider/date-format-tofte",
+            "sunspider/date-format-xparb",
+            "sunspider/math-cordic",
+            "sunspider/math-partial-sums",
+            "sunspider/math-spectral-norm",
+            "sunspider/regexp-dna",
+            "sunspider/string-base64",
+            "sunspider/string-fasta",
+            "sunspider/string-tagcloud",
+            "sunspider/string-unpack-code",
+            "sunspider/string-validate-input",
+        ]
+    ]
 
   def GetFlagsForTestCase(self, testcase, context):
     result = []
     result += context.mode_flags
     if testcase.path.startswith("kraken"):
-      result.append(os.path.join(self.testroot, "%s-data.js" % testcase.path))
-      result.append(os.path.join(self.testroot, "%s.js" % testcase.path))
+      result.append(os.path.join(self.testroot, f"{testcase.path}-data.js"))
+      result.append(os.path.join(self.testroot, f"{testcase.path}.js"))
     elif testcase.path.startswith("octane"):
       result.append(os.path.join(self.testroot, "octane/base.js"))
-      result.append(os.path.join(self.testroot, "%s.js" % testcase.path))
+      result.append(os.path.join(self.testroot, f"{testcase.path}.js"))
       if testcase.path.startswith("octane/gbemu"):
         result.append(os.path.join(self.testroot, "octane/gbemu-part2.js"))
       elif testcase.path.startswith("octane/typescript"):
@@ -123,17 +121,17 @@ class BenchmarksTestSuite(testsuite.TestSuite):
         result.append(os.path.join(self.testroot, "octane/zlib-data.js"))
       result += ["-e", "BenchmarkSuite.RunSuites({});"]
     elif testcase.path.startswith("sunspider"):
-      result.append(os.path.join(self.testroot, "%s.js" % testcase.path))
+      result.append(os.path.join(self.testroot, f"{testcase.path}.js"))
     return testcase.flags + result
 
   def GetSourceForTest(self, testcase):
-    filename = os.path.join(self.testroot, testcase.path + ".js")
+    filename = os.path.join(self.testroot, f"{testcase.path}.js")
     with open(filename) as f:
       return f.read()
 
   def _DownloadIfNecessary(self, url, revision, target_dir):
     # Maybe we're still up to date?
-    revision_file = "CHECKED_OUT_%s" % target_dir
+    revision_file = f"CHECKED_OUT_{target_dir}"
     checked_out_revision = None
     if os.path.exists(revision_file):
       with open(revision_file) as f:
@@ -144,7 +142,7 @@ class BenchmarksTestSuite(testsuite.TestSuite):
     # If we have a local archive file with the test data, extract it.
     if os.path.exists(target_dir):
       shutil.rmtree(target_dir)
-    archive_file = "downloaded_%s_%s.tar.gz" % (target_dir, revision)
+    archive_file = f"downloaded_{target_dir}_{revision}.tar.gz"
     if os.path.exists(archive_file):
       with tarfile.open(archive_file, "r:gz") as tar:
         tar.extractall()
@@ -153,12 +151,12 @@ class BenchmarksTestSuite(testsuite.TestSuite):
       return
 
     # No cached copy. Check out via SVN, and pack as .tar.gz for later use.
-    command = "svn co %s -r %s %s" % (url, revision, target_dir)
+    command = f"svn co {url} -r {revision} {target_dir}"
     code = subprocess.call(command, shell=True)
     if code != 0:
-      raise Exception("Error checking out %s benchmark" % target_dir)
+      raise Exception(f"Error checking out {target_dir} benchmark")
     with tarfile.open(archive_file, "w:gz") as tar:
-      tar.add("%s" % target_dir)
+      tar.add(f"{target_dir}")
     with open(revision_file, "w") as f:
       f.write(revision)
 

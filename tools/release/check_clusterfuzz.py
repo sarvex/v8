@@ -14,6 +14,7 @@ suppress stdout and stderr and only process contents of the results_file.
 """
 
 
+
 import argparse
 import httplib
 import json
@@ -26,7 +27,7 @@ import urllib2
 
 # Constants to git repos.
 BASE_URL = "https://chromium.googlesource.com"
-DEPS_LOG = BASE_URL + "/chromium/src/+log/master/DEPS?format=JSON"
+DEPS_LOG = f"{BASE_URL}/chromium/src/+log/master/DEPS?format=JSON"
 
 # Constants for retrieving v8 rolls.
 CRREV = "https://cr-rev.appspot.com/_ah/api/crrev/v1/commit/%s"
@@ -84,10 +85,8 @@ def GetLatestV8InChromium():
 
   git_revision = None
   for commit in commits["log"]:
-    # Get latest commit that matches the v8 roll pattern. Ignore cherry-picks.
-    match = re.match(V8_COMMIT_RE, commit["message"])
-    if match:
-      git_revision = match.group(1)
+    if match := re.match(V8_COMMIT_RE, commit["message"]):
+      git_revision = match[1]
       break
   else:
     return None

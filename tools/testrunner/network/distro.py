@@ -55,7 +55,7 @@ def Assign(suites, peers):
   shells = {}
   for s in suites:
     shell = s.shell()
-    if not shell in shells:
+    if shell not in shells:
       shells[shell] = Shell(shell)
     shells[shell].AddSuite(s)
   # Convert |shells| to list and sort it, shortest total_duration first.

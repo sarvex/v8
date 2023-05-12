@@ -47,9 +47,8 @@ def ReadLinesFrom(name):
       if line.startswith('#'): continue
       if '#' in line:
         line = line[:line.find('#')]
-      line = line.strip()
-      if not line: continue
-      lines.append(line)
+      if line := line.strip():
+        lines.append(line)
   return lines
 
 
@@ -61,7 +60,7 @@ def GuessOS():
     return 'macos'
   elif system.find('CYGWIN') >= 0:
     return 'cygwin'
-  elif system == 'Windows' or system == 'Microsoft':
+  elif system in ['Windows', 'Microsoft']:
     # On Windows Vista platform.system() can return 'Microsoft' with some
     # versions of Python, see http://bugs.python.org/issue1082
     return 'windows'
@@ -81,9 +80,8 @@ def GuessOS():
 
 def UseSimulator(arch):
   machine = platform.machine()
-  return (machine and
-      (arch == "mipsel" or arch == "arm" or arch == "arm64") and
-      not arch.startswith(machine))
+  return (machine and arch in ["mipsel", "arm", "arm64"]
+          and not arch.startswith(machine))
 
 
 # This will default to building the 32 bit VM even on machines that are
@@ -93,7 +91,7 @@ def DefaultArch():
   machine = machine.lower()  # Windows 7 capitalizes 'AMD64'.
   if machine.startswith('arm'):
     return 'arm'
-  elif (not machine) or (not re.match('(x|i[3-6])86$', machine) is None):
+  elif not machine or re.match('(x|i[3-6])86$', machine) is not None:
     return 'ia32'
   elif machine == 'i86pc':
     return 'ia32'
@@ -108,10 +106,7 @@ def DefaultArch():
 
 
 def GuessWordsize():
-  if '64' in platform.machine():
-    return '64'
-  else:
-    return '32'
+  return '64' if '64' in platform.machine() else '32'
 
 
 def IsWindows():

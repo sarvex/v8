@@ -26,9 +26,8 @@ def Find(filename, re):
   references = []
   with open(filename, "r") as f:
     for line in f:
-      match = re.match(line)
-      if match:
-        references.append(match.group(1))
+      if match := re.match(line):
+        references.append(match[1])
   return references
 
 def Main():
@@ -36,7 +35,7 @@ def Main():
   registrations = Find(REGISTER_FILE, REGISTER_RE)
   difference = list(set(declarations) - set(registrations) - set(BLACKLISTED))
   for reference in difference:
-    print("Declared but not registered: ExternalReference::%s" % reference)
+    print(f"Declared but not registered: ExternalReference::{reference}")
   return len(difference) > 0
 
 if __name__ == "__main__":

@@ -42,8 +42,9 @@ import sys
 import tempfile
 
 def Check(output, errors):
-  failed = any([s.startswith('/system/bin/sh:') or s.startswith('ANDROID')
-                for s in output.split('\n')])
+  failed = any(
+      s.startswith('/system/bin/sh:') or s.startswith('ANDROID')
+      for s in output.split('\n'))
   return 1 if failed else 0
 
 def Execute(cmdline):
@@ -78,14 +79,13 @@ def Escape(arg):
 def WriteToTemporaryFile(data):
   (fd, fname) = tempfile.mkstemp()
   os.close(fd)
-  tmp_file = open(fname, "w")
-  tmp_file.write(data)
-  tmp_file.close()
+  with open(fname, "w") as tmp_file:
+    tmp_file.write(data)
   return fname
 
 def Main():
   if (len(sys.argv) == 1):
-    print("Usage: %s <command-to-run-on-device>" % sys.argv[0])
+    print(f"Usage: {sys.argv[0]} <command-to-run-on-device>")
     return 1
   workspace = abspath(join(dirname(sys.argv[0]), '..'))
   android_workspace = os.getenv("ANDROID_V8", "/data/local/tmp/v8")
@@ -97,10 +97,10 @@ def Main():
             "esac\n")
   script = script.replace(workspace, android_workspace)
   script_file = WriteToTemporaryFile(script)
-  android_script_file = android_workspace + "/" + script_file
-  command =  ("adb push '%s' %s;" % (script_file, android_script_file) +
-              "adb shell 'sh %s';" % android_script_file +
-              "adb shell 'rm %s'" % android_script_file)
+  android_script_file = f"{android_workspace}/{script_file}"
+  command = (f"adb push '{script_file}' {android_script_file};" +
+             f"adb shell 'sh {android_script_file}';"
+             ) + f"adb shell 'rm {android_script_file}'"
   error_code = Execute(command)
   os.unlink(script_file)
   return error_code

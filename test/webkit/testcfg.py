@@ -71,11 +71,10 @@ class WebkitTestSuite(testsuite.TestSuite):
     files_match = FILES_PATTERN.search(source);
     # Accept several lines of 'Files:'.
     while True:
-      if files_match:
-        files_list += files_match.group(1).strip().split()
-        files_match = FILES_PATTERN.search(source, files_match.end())
-      else:
+      if not files_match:
         break
+      files_list += files_match.group(1).strip().split()
+      files_match = FILES_PATTERN.search(source, files_match.end())
     files = [ os.path.normpath(os.path.join(self.root, '..', '..', f))
               for f in files_list ]
     testfilename = os.path.join(self.root, testcase.path + self.suffix())
@@ -118,7 +117,7 @@ class WebkitTestSuite(testsuite.TestSuite):
   def IsFailureOutput(self, output, testpath):
     if super(WebkitTestSuite, self).IsFailureOutput(output, testpath):
       return True
-    file_name = os.path.join(self.root, testpath) + "-expected.txt"
+    file_name = f"{os.path.join(self.root, testpath)}-expected.txt"
     with file(file_name, "r") as expected:
       expected_lines = expected.readlines()
 

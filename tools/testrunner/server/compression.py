@@ -56,7 +56,7 @@ class Receiver(object):
     self._next = self._GetNext()
 
   def IsDone(self):
-    return self._next == None
+    return self._next is None
 
   def Current(self):
     return self._next
@@ -88,9 +88,7 @@ class Receiver(object):
       result = self._PopData(size)
       result = zlib.decompress(result)
       result = json.loads(result)
-      if result == constants.END_OF_STREAM:
-        return None
-      return result
+      return None if result == constants.END_OF_STREAM else result
     except:
       raise
 

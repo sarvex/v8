@@ -49,7 +49,7 @@ class PerfDataEntry(object):
 
 class PerfDataStore(object):
   def __init__(self, datadir, arch, mode):
-    filename = os.path.join(datadir, "%s.%s.perfdata" % (arch, mode))
+    filename = os.path.join(datadir, f"{arch}.{mode}.perfdata")
     self.database = shelve.open(filename, protocol=2)
     self.closed = False
     self.lock = threading.Lock()
@@ -65,14 +65,12 @@ class PerfDataStore(object):
   def GetKey(self, test):
     """Computes the key used to access data for the given testcase."""
     flags = "".join(test.flags)
-    return str("%s.%s.%s" % (test.suitename(), test.path, flags))
+    return str(f"{test.suitename()}.{test.path}.{flags}")
 
   def FetchPerfData(self, test):
     """Returns the observed duration for |test| as read from the store."""
     key = self.GetKey(test)
-    if key in self.database:
-      return self.database[key].avg
-    return None
+    return self.database[key].avg if key in self.database else None
 
   def UpdatePerfData(self, test):
     """Updates the persisted value in the store with test.duration."""
@@ -81,10 +79,7 @@ class PerfDataStore(object):
 
   def RawUpdatePerfData(self, testkey, duration):
     with self.lock:
-      if testkey in self.database:
-        entry = self.database[testkey]
-      else:
-        entry = PerfDataEntry()
+      entry = self.database[testkey] if testkey in self.database else PerfDataEntry()
       entry.AddResult(duration)
       self.database[testkey] = entry
 
@@ -112,9 +107,9 @@ class PerfDataManager(object):
 
   def GetStore(self, arch, mode):
     with self.lock:
-      if not arch in self.stores:
+      if arch not in self.stores:
         self.stores[arch] = {}
       modes = self.stores[arch]
-      if not mode in modes:
+      if mode not in modes:
         modes[mode] = PerfDataStore(self.datadir, arch, mode)
       return modes[mode]

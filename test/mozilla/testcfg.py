@@ -80,7 +80,7 @@ class MozillaTestSuite(testsuite.TestSuite):
         dirs.sort()
         files.sort()
         for filename in files:
-          if filename.endswith(".js") and not filename in FRAMEWORK:
+          if filename.endswith(".js") and filename not in FRAMEWORK:
             testname = os.path.join(dirname[len(self.testroot) + 1:],
                                     filename[:-3])
             case = testcase.TestCase(self, testname)
@@ -92,7 +92,7 @@ class MozillaTestSuite(testsuite.TestSuite):
     result += context.mode_flags
     result += ["--expose-gc"]
     result += [os.path.join(self.root, "mozilla-shell-emulation.js")]
-    testfilename = testcase.path + ".js"
+    testfilename = f"{testcase.path}.js"
     testfilepath = testfilename.split(os.path.sep)
     for i in xrange(len(testfilepath)):
       script = os.path.join(self.testroot,
@@ -104,7 +104,7 @@ class MozillaTestSuite(testsuite.TestSuite):
     return testcase.flags + result
 
   def GetSourceForTest(self, testcase):
-    filename = os.path.join(self.testroot, testcase.path + ".js")
+    filename = os.path.join(self.testroot, f"{testcase.path}.js")
     with open(filename) as f:
       return f.read()
 
@@ -112,17 +112,14 @@ class MozillaTestSuite(testsuite.TestSuite):
     return testcase.path.endswith("-n")
 
   def IsFailureOutput(self, output, testpath):
-    if output.exit_code != 0:
-      return True
-    return "FAILED!" in output.stdout
+    return True if output.exit_code != 0 else "FAILED!" in output.stdout
 
   def DownloadData(self):
     old_cwd = os.getcwd()
     os.chdir(os.path.abspath(self.root))
 
-    # Maybe we're still up to date?
-    versionfile = "CHECKED_OUT_VERSION"
     checked_out_version = None
+    versionfile = "CHECKED_OUT_VERSION"
     if os.path.exists(versionfile):
       with open(versionfile) as f:
         checked_out_version = f.read()
@@ -132,12 +129,12 @@ class MozillaTestSuite(testsuite.TestSuite):
 
     # If we have a local archive file with the test data, extract it.
     directory_name = "data"
-    directory_name_old = "data.old"
     if os.path.exists(directory_name):
+      directory_name_old = "data.old"
       if os.path.exists(directory_name_old):
         shutil.rmtree(directory_name_old)
       os.rename(directory_name, directory_name_old)
-    archive_file = "downloaded_%s.tar.gz" % MOZILLA_VERSION
+    archive_file = f"downloaded_{MOZILLA_VERSION}.tar.gz"
     if os.path.exists(archive_file):
       with tarfile.open(archive_file, "r:gz") as tar:
         tar.extractall()
@@ -147,8 +144,7 @@ class MozillaTestSuite(testsuite.TestSuite):
       return
 
     # No cached copy. Check out via CVS, and pack as .tar.gz for later use.
-    command = ("cvs -d :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot"
-               " co -D %s mozilla/js/tests" % MOZILLA_VERSION)
+    command = f"cvs -d :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot co -D {MOZILLA_VERSION} mozilla/js/tests"
     code = subprocess.call(command, shell=True)
     if code != 0:
       os.chdir(old_cwd)

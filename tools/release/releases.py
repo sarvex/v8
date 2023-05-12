@@ -111,14 +111,11 @@ def BuildRevisionRanges(cr_releases):
     range_lists.setdefault(cr_releases[-1][1], []).append(cr_releases[-1][0])
 
   # Stringify and comma-separate the range lists.
-  return dict((hsh, ", ".join(ran)) for hsh, ran in range_lists.iteritems())
+  return {hsh: ", ".join(ran) for hsh, ran in range_lists.iteritems()}
 
 
 def MatchSafe(match):
-  if match:
-    return match.group(1)
-  else:
-    return ""
+  return match.group(1) if match else ""
 
 
 class Preparation(Step):
@@ -145,18 +142,16 @@ class RetrieveV8Releases(Step):
       patches = MatchSafe(ROLLBACK_MESSAGE_RE.search(body))
       if patches:
         # Indicate reverted patches with a "-".
-        patches = "-%s" % patches
+        patches = f"-{patches}"
     return patches
 
   def GetMergedPatchesGit(self, body):
     patches = []
     for line in body.splitlines():
-      patch = MatchSafe(MERGE_MESSAGE_GIT_RE.match(line))
-      if patch:
+      if patch := MatchSafe(MERGE_MESSAGE_GIT_RE.match(line)):
         patches.append(patch)
-      patch = MatchSafe(ROLLBACK_MESSAGE_GIT_RE.match(line))
-      if patch:
-        patches.append("-%s" % patch)
+      if patch := MatchSafe(ROLLBACK_MESSAGE_GIT_RE.match(line)):
+        patches.append(f"-{patch}")
     return ", ".join(patches)
 
 
@@ -165,32 +160,19 @@ class RetrieveV8Releases(Step):
       patches, cl_body):
     revision = self.GetCommitPositionNumber(git_hash)
     return {
-      # The cr commit position number on the branch.
-      "revision": revision,
-      # The git revision on the branch.
-      "revision_git": git_hash,
-      # The cr commit position number on master.
-      "master_position": master_position,
-      # The same for git.
-      "master_hash": master_hash,
-      # The branch name.
-      "branch": branch,
-      # The version for displaying in the form 3.26.3 or 3.26.3.12.
-      "version": version,
-      # The date of the commit.
-      "date": self.GitLog(n=1, format="%ci", git_hash=git_hash),
-      # Merged patches if available in the form 'r1234, r2345'.
-      "patches_merged": patches,
-      # Default for easier output formatting.
-      "chromium_revision": "",
-      # Default for easier output formatting.
-      "chromium_branch": "",
-      # Link to the CL on code review. Candiates pushes are not uploaded,
-      # so this field will be populated below with the recent roll CL link.
-      "review_link": MatchSafe(REVIEW_LINK_RE.search(cl_body)),
-      # Link to the commit message on google code.
-      "revision_link": ("https://code.google.com/p/v8/source/detail?r=%s"
-                        % revision),
+        "revision": revision,
+        "revision_git": git_hash,
+        "master_position": master_position,
+        "master_hash": master_hash,
+        "branch": branch,
+        "version": version,
+        "date": self.GitLog(n=1, format="%ci", git_hash=git_hash),
+        "patches_merged": patches,
+        "chromium_revision": "",
+        "chromium_branch": "",
+        "review_link": MatchSafe(REVIEW_LINK_RE.search(cl_body)),
+        "revision_link":
+        f"https://code.google.com/p/v8/source/detail?r={revision}",
     }
 
   def GetRelease(self, git_hash, branch):
@@ -201,7 +183,7 @@ class RetrieveV8Releases(Step):
 
     patches = ""
     if self["patch"] != "0":
-      version += ".%s" % self["patch"]
+      version += f'.{self["patch"]}'
       if CHERRY_PICK_TITLE_GIT_RE.match(body.splitlines()[0]):
         patches = self.GetMergedPatchesGit(body)
       else:
@@ -356,7 +338,7 @@ class RetrieveChromiumV8Releases(Step):
     self.GitFetchOrigin(cwd=os.path.join(cwd, "v8"))
 
     # All v8 revisions we are interested in.
-    releases_dict = dict((r["revision_git"], r) for r in self["releases"])
+    releases_dict = {r["revision_git"]: r for r in self["releases"]}
 
     cr_releases = []
     try:
@@ -367,10 +349,8 @@ class RetrieveChromiumV8Releases(Step):
         if not self.GitCheckoutFileSafe("DEPS", git_hash, cwd=cwd):
           break  # pragma: no cover
         deps = FileToText(os.path.join(cwd, "DEPS"))
-        match = DEPS_RE.search(deps)
-        if match:
-          cr_rev = self.GetCommitPositionNumber(git_hash, cwd=cwd)
-          if cr_rev:
+        if match := DEPS_RE.search(deps):
+          if cr_rev := self.GetCommitPositionNumber(git_hash, cwd=cwd):
             v8_hsh = match.group(1)
             cr_releases.append([cr_rev, v8_hsh])
 
@@ -379,7 +359,6 @@ class RetrieveChromiumV8Releases(Step):
           if v8_hsh not in releases_dict:
             break  # pragma: no cover
 
-    # Allow Ctrl-C interrupt.
     except (KeyboardInterrupt, SystemExit):  # pragma: no cover
       pass
 
@@ -401,15 +380,14 @@ class RietrieveChromiumBranches(Step):
     cwd = self._options.chromium
 
     # All v8 revisions we are interested in.
-    releases_dict = dict((r["revision_git"], r) for r in self["releases"])
+    releases_dict = {r["revision_git"]: r for r in self["releases"]}
 
     # Filter out irrelevant branches.
     branches = filter(lambda r: re.match(r"branch-heads/\d+", r),
                       self.GitRemotes(cwd=cwd))
 
     # Transform into pure branch numbers.
-    branches = map(lambda r: int(re.match(r"branch-heads/(\d+)", r).group(1)),
-                   branches)
+    branches = map(lambda r: int(re.match(r"branch-heads/(\d+)", r)[1]), branches)
 
     branches = sorted(branches, reverse=True)
 
@@ -421,8 +399,7 @@ class RietrieveChromiumBranches(Step):
                                         cwd=cwd):
           break  # pragma: no cover
         deps = FileToText(os.path.join(cwd, "DEPS"))
-        match = DEPS_RE.search(deps)
-        if match:
+        if match := DEPS_RE.search(deps):
           v8_hsh = match.group(1)
           cr_branches.append([str(branch), v8_hsh])
 
@@ -431,7 +408,6 @@ class RietrieveChromiumBranches(Step):
           if v8_hsh not in releases_dict:
             break  # pragma: no cover
 
-    # Allow Ctrl-C interrupt.
     except (KeyboardInterrupt, SystemExit):  # pragma: no cover
       pass
 

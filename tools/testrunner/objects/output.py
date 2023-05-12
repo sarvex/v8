@@ -41,12 +41,11 @@ class Output(object):
   def HasCrashed(self):
     if utils.IsWindows():
       return 0x80000000 & self.exit_code and not (0x3FFFFF00 & self.exit_code)
-    else:
-      # Timed out tests will have exit_code -signal.SIGTERM.
-      if self.timed_out:
-        return False
-      return (self.exit_code < 0 and
-              self.exit_code != -signal.SIGABRT)
+    # Timed out tests will have exit_code -signal.SIGTERM.
+    if self.timed_out:
+      return False
+    return (self.exit_code < 0 and
+            self.exit_code != -signal.SIGABRT)
 
   def HasTimedOut(self):
     return self.timed_out

@@ -43,7 +43,7 @@ def EscapeCommand(command):
     if ' ' in part:
       # Escape spaces.  We may need to escape more characters for this
       # to work properly.
-      parts.append('"%s"' % part)
+      parts.append(f'"{part}"')
     else:
       parts.append(part)
   return " ".join(parts)
@@ -138,16 +138,14 @@ class DotsProgressIndicator(SimpleProgressIndicator):
     if has_unexpected_output:
       if test.output.HasCrashed():
         sys.stdout.write('C')
-        sys.stdout.flush()
       elif test.output.HasTimedOut():
         sys.stdout.write('T')
-        sys.stdout.flush()
       else:
         sys.stdout.write('F')
-        sys.stdout.flush()
     else:
       sys.stdout.write('.')
-      sys.stdout.flush()
+
+    sys.stdout.flush()
 
 
 class CompactProgressIndicator(ProgressIndicator):
@@ -185,7 +183,7 @@ class CompactProgressIndicator(ProgressIndicator):
 
   def Truncate(self, string, length):
     if length and (len(string) > (length - 3)):
-      return string[:(length - 3)] + "..."
+      return f"{string[:length - 3]}..."
     else:
       return string
 
@@ -244,10 +242,7 @@ class JUnitTestProgressIndicator(ProgressIndicator):
   def __init__(self, progress_indicator, junitout, junittestsuite):
     self.progress_indicator = progress_indicator
     self.outputter = junit_output.JUnitTestOutput(junittestsuite)
-    if junitout:
-      self.outfile = open(junitout, "w")
-    else:
-      self.outfile = sys.stdout
+    self.outfile = open(junitout, "w") if junitout else sys.stdout
 
   def Starting(self):
     self.progress_indicator.runner = self.runner
@@ -272,7 +267,7 @@ class JUnitTestProgressIndicator(ProgressIndicator):
       stderr = test.output.stderr.strip()
       if len(stderr):
         fail_text += "stderr:\n%s\n" % stderr
-      fail_text += "Command: %s" % EscapeCommand(self.runner.GetCommand(test))
+      fail_text += f"Command: {EscapeCommand(self.runner.GetCommand(test))}"
       if test.output.HasCrashed():
         fail_text += "exit code: %d\n--- CRASHED ---" % test.output.exit_code
       if test.output.HasTimedOut():

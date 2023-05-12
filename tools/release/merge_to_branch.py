@@ -76,27 +76,30 @@ class SearchArchitecturePorts(Step):
     port_revision_list = []
     for revision in self["full_revision_list"]:
       # Search for commits which matches the "Port XXX" pattern.
-      git_hashes = self.GitLog(reverse=True, format="%H",
-                               grep="Port %s" % revision,
-                               branch=self.vc.RemoteMasterBranch())
+      git_hashes = self.GitLog(
+          reverse=True,
+          format="%H",
+          grep=f"Port {revision}",
+          branch=self.vc.RemoteMasterBranch(),
+      )
       for git_hash in git_hashes.splitlines():
         revision_title = self.GitLog(n=1, format="%s", git_hash=git_hash)
 
         # Is this revision included in the original revision list?
         if git_hash in self["full_revision_list"]:
-          print("Found port of %s -> %s (already included): %s"
-                % (revision, git_hash, revision_title))
+          print(
+              f"Found port of {revision} -> {git_hash} (already included): {revision_title}"
+          )
         else:
-          print("Found port of %s -> %s: %s"
-                % (revision, git_hash, revision_title))
+          print(f"Found port of {revision} -> {git_hash}: {revision_title}")
           port_revision_list.append(git_hash)
 
     # Do we find any port?
-    if len(port_revision_list) > 0:
-      if self.Confirm("Automatically add corresponding ports (%s)?"
-                      % ", ".join(port_revision_list)):
-        #: 'y': Add ports to revision list.
-        self["full_revision_list"].extend(port_revision_list)
+    if port_revision_list and self.Confirm(
+        f'Automatically add corresponding ports ({", ".join(port_revision_list)})?'
+    ):
+      #: 'y': Add ports to revision list.
+      self["full_revision_list"].extend(port_revision_list)
 
 
 class CreateCommitMessage(Step):
@@ -105,8 +108,8 @@ class CreateCommitMessage(Step):
   def RunStep(self):
 
     # Stringify: [123, 234] -> "r123, r234"
-    self["revision_list"] = ", ".join(map(lambda s: "r%s" % s,
-                                      self["full_revision_list"]))
+    self["revision_list"] = ", ".join(
+        map(lambda s: f"r{s}", self["full_revision_list"]))
 
     if not self["revision_list"]:  # pragma: no cover
       self.Die("Revision list is empty.")
@@ -118,10 +121,9 @@ class CreateCommitMessage(Step):
 
     # The commit message title is added below after the version is specified.
     msg_pieces = [
-      "\n".join(action_text % s for s in self["full_revision_list"]),
+        "\n".join((action_text % s for s in self["full_revision_list"])),
+        "\n\n",
     ]
-    msg_pieces.append("\n\n")
-
     for commit_hash in self["full_revision_list"]:
       patch_merge_desc = self.GitLog(n=1, format="%s", git_hash=commit_hash)
       msg_pieces.append("%s\n\n" % patch_merge_desc)
@@ -131,8 +133,8 @@ class CreateCommitMessage(Step):
       msg = self.GitLog(n=1, git_hash=commit_hash)
       for bug in re.findall(r"^[ \t]*BUG[ \t]*=[ \t]*(.*?)[ \t]*$", msg, re.M):
         bugs.extend(s.strip() for s in bug.split(","))
-    bug_aggregate = ",".join(sorted(filter(lambda s: s and s != "none", bugs)))
-    if bug_aggregate:
+    if bug_aggregate := ",".join(
+        sorted(filter(lambda s: s and s != "none", bugs))):
       msg_pieces.append("BUG=%s\nLOG=N\n" % bug_aggregate)
 
     self["new_commit_msg"] = "".join(msg_pieces)
@@ -143,8 +145,7 @@ class ApplyPatches(Step):
 
   def RunStep(self):
     for commit_hash in self["full_revision_list"]:
-      print("Applying patch for %s to %s..."
-            % (commit_hash, self["merge_to_branch"]))
+      print(f'Applying patch for {commit_hash} to {self["merge_to_branch"]}...')
       patch = self.GitGetPatch(commit_hash)
       TextToFile(patch, self.Config("TEMPORARY_PATCH_FILE"))
       self.ApplyPatch(self.Config("TEMPORARY_PATCH_FILE"), self._options.revert)
@@ -181,10 +182,8 @@ class IncrementVersion(Step):
     else:
       self.Editor(os.path.join(self.default_cwd, VERSION_FILE))
     self.ReadAndPersistVersion("new_")
-    self["version"] = "%s.%s.%s.%s" % (self["new_major"],
-                                       self["new_minor"],
-                                       self["new_build"],
-                                       self["new_patch"])
+    self[
+        "version"] = f'{self["new_major"]}.{self["new_minor"]}.{self["new_build"]}.{self["new_patch"]}'
 
 
 class CommitLocal(Step):
@@ -197,7 +196,7 @@ class CommitLocal(Step):
       # reverted in one CL.
       self["commit_title"] = "Revert on master"
     else:
-      self["commit_title"] = "Version %s (cherry-pick)" % self["version"]
+      self["commit_title"] = f'Version {self["version"]} (cherry-pick)'
     self["new_commit_msg"] = "%s\n\n%s" % (self["commit_title"],
                                            self["new_commit_msg"])
     TextToFile(self["new_commit_msg"], self.Config("COMMITMSG_FILE"))

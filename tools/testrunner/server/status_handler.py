@@ -91,12 +91,8 @@ class StatusHandler(SocketServer.BaseRequestHandler):
 
       elif action == constants.NOTIFY_NEW_TRUSTED:
         self.server.daemon.AcceptNewTrusted(data[1:])
-        pass  # No response.
-
       elif action == constants.TRUST_YOU_NOW:
         self.server.daemon.MarkPeerAsTrusting(self.client_address[0])
-        pass  # No response.
-
       elif action == constants.DO_YOU_TRUST:
         response = self.server.daemon.IsTrusted(data[1])
         compression.Send([action, response], self.request)

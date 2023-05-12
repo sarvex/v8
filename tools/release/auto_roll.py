@@ -18,10 +18,7 @@ class CheckActiveRoll(Step):
 
   @staticmethod
   def ContainsChromiumRoll(changes):
-    for change in changes:
-      if change["subject"].startswith("Update V8 to"):
-        return True
-    return False
+    return any(change["subject"].startswith("Update V8 to") for change in changes)
 
   def RunStep(self):
     params = {
@@ -72,8 +69,9 @@ class DetectLastRoll(Step):
         self["roll"] = revision
         break
     else:
-      print("There is no newer v8 revision than the one in Chromium (%s)."
-            % self["last_roll"])
+      print(
+          f'There is no newer v8 revision than the one in Chromium ({self["last_roll"]}).'
+      )
       return True
 
 

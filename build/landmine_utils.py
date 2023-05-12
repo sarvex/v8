@@ -80,10 +80,7 @@ def platform():
   Possible values: 'win', 'mac', 'linux', 'ios', 'android'
   """
   if 'OS' in gyp_defines():
-    if 'android' in gyp_defines()['OS']:
-      return 'android'
-    else:
-      return gyp_defines()['OS']
+    return 'android' if 'android' in gyp_defines()['OS'] else gyp_defines()['OS']
   elif IsWindows():
     return 'win'
   elif IsLinux():
@@ -107,17 +104,16 @@ def builder():
       return 'ninja'
     else:
       return generator
+  elif platform() == 'android':
+    # Good enough for now? Do any android bots use make?
+    return 'make'
+  elif platform() == 'ios':
+    return 'xcode'
+  elif IsWindows():
+    return 'msvs'
+  elif IsLinux():
+    return 'make'
+  elif IsMac():
+    return 'xcode'
   else:
-    if platform() == 'android':
-      # Good enough for now? Do any android bots use make?
-      return 'make'
-    elif platform() == 'ios':
-      return 'xcode'
-    elif IsWindows():
-      return 'msvs'
-    elif IsLinux():
-      return 'make'
-    elif IsMac():
-      return 'xcode'
-    else:
-      assert False, 'Don\'t know what builder we\'re using!'
+    assert False, 'Don\'t know what builder we\'re using!'

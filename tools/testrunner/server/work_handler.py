@@ -55,8 +55,7 @@ class WorkHandler(SocketServer.BaseRequestHandler):
     os.chdir(v8_root)
     packet = workpacket.WorkPacket.Unpack(data)
     self.ctx = packet.context
-    self.ctx.shell_dir = os.path.join("out",
-                                      "%s.%s" % (self.ctx.arch, self.ctx.mode))
+    self.ctx.shell_dir = os.path.join("out", f"{self.ctx.arch}.{self.ctx.mode}")
     if not os.path.isdir(self.ctx.shell_dir):
       os.makedirs(self.ctx.shell_dir)
     for binary in packet.binaries:
@@ -94,7 +93,7 @@ class WorkHandler(SocketServer.BaseRequestHandler):
       target = os.path.join(libdir, binary_name)
     else:
       target = os.path.join(self.ctx.shell_dir, binary_name)
-    pubkeyfile = "../trusted/%s.pem" % pubkey_fingerprint
+    pubkeyfile = f"../trusted/{pubkey_fingerprint}.pem"
     if not signatures.VerifySignature(target, binary["blob"],
                                       binary["sign"], pubkeyfile):
       self._SendResponse("Signature verification failed")
@@ -117,7 +116,7 @@ class WorkHandler(SocketServer.BaseRequestHandler):
       except:
         self._SendResponse("Base revision not found.")
         return False
-    code = self._Call("git checkout -f %s" % base_revision)
+    code = self._Call(f"git checkout -f {base_revision}")
     if code != 0:
       self._SendResponse("Error trying to check out base revision.")
       return False
@@ -132,7 +131,7 @@ class WorkHandler(SocketServer.BaseRequestHandler):
     patchfilename = "_dtest_incoming_patch.patch"
     with open(patchfilename, "w") as f:
       f.write(patch)
-    code = self._Call("git apply %s" % patchfilename)
+    code = self._Call(f"git apply {patchfilename}")
     if code != 0:
       self._SendResponse("Error applying patch.")
       return False

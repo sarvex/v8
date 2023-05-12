@@ -43,11 +43,24 @@ PASS_OR_FAIL = "PASS_OR_FAIL"
 
 ALWAYS = "ALWAYS"
 
-KEYWORDS = {}
-for key in [SKIP, FAIL, PASS, OKAY, TIMEOUT, CRASH, SLOW, FLAKY, FAIL_OK,
-            FAST_VARIANTS, NO_VARIANTS, PASS_OR_FAIL, ALWAYS]:
-  KEYWORDS[key] = key
-
+KEYWORDS = {
+    key: key
+    for key in [
+        SKIP,
+        FAIL,
+        PASS,
+        OKAY,
+        TIMEOUT,
+        CRASH,
+        SLOW,
+        FLAKY,
+        FAIL_OK,
+        FAST_VARIANTS,
+        NO_VARIANTS,
+        PASS_OR_FAIL,
+        ALWAYS,
+    ]
+}
 DEFS = {FAIL_OK: [FAIL, OKAY],
         PASS_OR_FAIL: [PASS, FAIL]}
 
@@ -82,8 +95,8 @@ def IsFlaky(outcomes):
 
 
 def IsPassOrFail(outcomes):
-  return ((PASS in outcomes) and (FAIL in outcomes) and
-          (not CRASH in outcomes) and (not OKAY in outcomes))
+  return (PASS in outcomes and FAIL in outcomes and CRASH not in outcomes
+          and OKAY not in outcomes)
 
 
 def IsFailOk(outcomes):
@@ -117,7 +130,7 @@ def _ParseOutcomeList(rule, outcomes, target_dict, variables):
         _AddOutcome(result, outcome)
     else:
       assert False
-  if len(result) == 0: return
+  if not result: return
   if rule in target_dict:
     target_dict[rule] |= result
   else:

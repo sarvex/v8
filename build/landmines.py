@@ -55,7 +55,7 @@ def get_build_dir(build_tool, is_iphone=False):
   elif build_tool in ['msvs', 'vs', 'ib']:
     ret = os.path.join(SRC_DIR, 'build')
   else:
-    raise NotImplementedError('Unexpected GYP_GENERATORS (%s)' % build_tool)
+    raise NotImplementedError(f'Unexpected GYP_GENERATORS ({build_tool})')
   return os.path.abspath(ret)
 
 
@@ -79,7 +79,7 @@ def extract_gn_build_commands(build_ninja_file):
         return ''  # Unexpected EOF.
       result += line
       if line[0] == '\n':
-        num_blank_lines = num_blank_lines + 1
+        num_blank_lines += 1
   return result
 
 def delete_build_dir(build_dir):
@@ -157,9 +157,7 @@ def clobber_if_necessary(new_landmines):
   try:
     os.makedirs(out_dir)
   except OSError as e:
-    if e.errno == errno.EEXIST:
-      pass
-
+    pass
   if needs_clobber(landmines_path, new_landmines):
     # Clobber contents of build directory but not directory itself: some
     # checkouts have the build directory mounted.
@@ -176,11 +174,10 @@ def clobber_if_necessary(new_landmines):
                path.endswith('.vcxproj') or
                path.endswith('.vcxproj.user'))):
           os.unlink(path)
-      else:
-        if os.path.isfile(path):
-          os.unlink(path)
-        elif os.path.isdir(path):
-          delete_build_dir(path)
+      elif os.path.isfile(path):
+        os.unlink(path)
+      elif os.path.isdir(path):
+        delete_build_dir(path)
     if os.path.basename(out_dir) == 'xcodebuild':
       # Xcodebuild puts an additional project file structure into build,
       # while the output folder is xcodebuild.
@@ -211,13 +208,12 @@ def process_options():
   options, args = parser.parse_args()
 
   if args:
-    parser.error('Unknown arguments %s' % args)
+    parser.error(f'Unknown arguments {args}')
 
   logging.basicConfig(
       level=logging.DEBUG if options.verbose else logging.ERROR)
 
-  extra_script = os.environ.get('EXTRA_LANDMINES_SCRIPT')
-  if extra_script:
+  if extra_script := os.environ.get('EXTRA_LANDMINES_SCRIPT'):
     return options.landmine_scripts + [extra_script]
   else:
     return options.landmine_scripts

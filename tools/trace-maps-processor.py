@@ -31,7 +31,7 @@ class Map(object):
     self.origin = origin
 
   def __str__(self):
-    return "%s (%s)" % (self.pointer, self.origin)
+    return f"{self.pointer} ({self.origin})"
 
 
 class Transition(object):
@@ -77,8 +77,9 @@ def AddTransition(from_map, to_map, reason):
       targets[to_map].reason = reason
       return
     # Unexpected duplicate events? Warn.
-    print("// warning: already have a transition from %s to %s, reason: %s" %
-            (from_map, to_map, targets[to_map].reason))
+    print(
+        f"// warning: already have a transition from {from_map} to {to_map}, reason: {targets[to_map].reason}"
+    )
     return
   targets[to_map] = Transition(from_map, to_map, reason)
 
@@ -92,43 +93,42 @@ with open(filename, "r") as f:
     if event == "InitialMap":
       assert words[2] == "map="
       assert words[4] == "SFI="
-      new_map = AddMap(words[3], "SFI#%s" % words[5])
+      new_map = AddMap(words[3], f"SFI#{words[5]}")
       root_maps.append(new_map)
       continue
     if words[2] == "from=" and words[4] == "to=":
       from_map = words[3]
       to_map = words[5]
       if from_map not in annotations:
-        print("// warning: unknown from_map %s" % from_map)
+        print(f"// warning: unknown from_map {from_map}")
         new_map = AddMap(from_map, "<unknown>")
         root_maps.append(new_map)
       if to_map != last_to_map:
-        AddMap(to_map, "<transition> (%s)" % event)
+        AddMap(to_map, f"<transition> ({event})")
       last_to_map = to_map
       if event in ["Transition", "NoTransition"]:
         assert words[6] == "name=", line
-        reason = "%s: %s" % (event, words[7])
+        reason = f"{event}: {words[7]}"
       elif event in ["Normalize", "ReplaceDescriptors", "SlowToFast"]:
         assert words[6] == "reason=", line
-        reason = "%s: %s" % (event, words[7])
+        reason = f"{event}: {words[7]}"
         if words[8].strip() != "]":
-          reason = "%s_%s" % (reason, words[8])
+          reason = f"{reason}_{words[8]}"
       else:
         reason = event
-      AddTransition(from_map, to_map, reason)
+      AddTransition(from_map, last_to_map, reason)
       continue
 
 
 def PlainPrint(m, indent, label):
-  print("%s%s (%s)" % (indent, m, label))
+  print(f"{indent}{m} ({label})")
   if m in transitions:
     for t in transitions[m]:
-      PlainPrint(t, indent + "  ", transitions[m][t].reason)
+      PlainPrint(t, f"{indent}  ", transitions[m][t].reason)
 
 
 def CountTransitions(m):
-  if m not in transitions: return 0
-  return len(transitions[m])
+  return 0 if m not in transitions else len(transitions[m])
 
 
 def DotPrint(m, label):
@@ -137,7 +137,7 @@ def DotPrint(m, label):
     for t in transitions[m]:
       # GraphViz doesn't like node labels looking like numbers, so use
       # "m..." instead of "0x...".
-      print("m%s -> m%s" % (m[2:], t[2:]))
+      print(f"m{m[2:]} -> m{t[2:]}")
       reason = transitions[m][t].reason
       reason = reason.replace("\\", "BACKSLASH")
       reason = reason.replace("\"", "\\\"")

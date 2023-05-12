@@ -77,7 +77,7 @@ class Test262TestSuite(testsuite.TestSuite):
   def GetFlagsForTestCase(self, testcase, context):
     return (testcase.flags + context.mode_flags + self.harness +
             self.GetIncludesForTest(testcase) + ["--harmony"] +
-            [os.path.join(self.testroot, testcase.path + ".js")])
+            [os.path.join(self.testroot, f"{testcase.path}.js")])
 
   def LoadParseTestRecord(self):
     if not self.ParseTestRecord:
@@ -104,15 +104,11 @@ class Test262TestSuite(testsuite.TestSuite):
 
   def GetIncludesForTest(self, testcase):
     test_record = self.GetTestRecord(testcase)
-    if "includes" in test_record:
-      includes = [os.path.join(self.harnesspath, f)
-                  for f in test_record["includes"]]
-    else:
-      includes = []
-    return includes
+    return ([os.path.join(self.harnesspath, f) for f in test_record["includes"]]
+            if "includes" in test_record else [])
 
   def GetSourceForTest(self, testcase):
-    filename = os.path.join(self.testroot, testcase.path + ".js")
+    filename = os.path.join(self.testroot, f"{testcase.path}.js")
     with open(filename) as f:
       return f.read()
 
@@ -121,9 +117,7 @@ class Test262TestSuite(testsuite.TestSuite):
     return "negative" in test_record
 
   def IsFailureOutput(self, output, testpath):
-    if output.exit_code != 0:
-      return True
-    return "FAILED!" in output.stdout
+    return True if output.exit_code != 0 else "FAILED!" in output.stdout
 
   def DownloadData(self):
     revision = TEST_262_ARCHIVE_REVISION

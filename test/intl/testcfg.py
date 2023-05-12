@@ -54,8 +54,7 @@ class IntlTestSuite(testsuite.TestSuite):
   def GetFlagsForTestCase(self, testcase, context):
     flags = ["--allow-natives-syntax"] + context.mode_flags
 
-    files = []
-    files.append(os.path.join(self.root, "assert.js"))
+    files = [os.path.join(self.root, "assert.js")]
     files.append(os.path.join(self.root, "utils.js"))
     files.append(os.path.join(self.root, testcase.path + self.suffix()))
 

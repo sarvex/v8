@@ -67,7 +67,7 @@ class MessageTestSuite(testsuite.TestSuite):
     if MODULE_PATTERN.search(source):
       result.append("--module")
     result = [x for x in result if x not in INVALID_FLAGS]
-    result.append(os.path.join(self.root, testcase.path + ".js"))
+    result.append(os.path.join(self.root, f"{testcase.path}.js"))
     return testcase.flags + result
 
   def GetSourceForTest(self, testcase):
@@ -89,23 +89,22 @@ class MessageTestSuite(testsuite.TestSuite):
             string.find("NaClHostDescOpen:") > 0)
 
   def IsFailureOutput(self, output, testpath):
-    expected_path = os.path.join(self.root, testpath + ".out")
+    expected_path = os.path.join(self.root, f"{testpath}.out")
     expected_lines = []
     # Can't use utils.ReadLinesFrom() here because it strips whitespace.
     with open(expected_path) as f:
-      for line in f:
-        if line.startswith("#") or not line.strip(): continue
-        expected_lines.append(line)
+      expected_lines.extend(line for line in f
+                            if not line.startswith("#") and line.strip())
     raw_lines = output.stdout.splitlines()
     actual_lines = [ s for s in raw_lines if not self._IgnoreLine(s) ]
-    env = { "basename": os.path.basename(testpath + ".js") }
+    env = {"basename": os.path.basename(f"{testpath}.js")}
     if len(expected_lines) != len(actual_lines):
       return True
     for (expected, actual) in itertools.izip_longest(
         expected_lines, actual_lines, fillvalue=''):
       pattern = re.escape(expected.rstrip() % env)
       pattern = pattern.replace("\\*", ".*")
-      pattern = "^%s$" % pattern
+      pattern = f"^{pattern}$"
       if not re.match(pattern, actual):
         return True
     return False

@@ -92,25 +92,24 @@ class Item(object):
     self.title = title
     self.axis = axis
     self.props = keywords
-    if type(field) is types.ListType:
-      self.field = field
-    else:
-      self.field = [field]
+    self.field = field if type(field) is types.ListType else [field]
 
   def fieldrefs(self):
     return self.field
 
   def to_gnuplot(self, context):
-    args = ['"%s"' % context.datafile,
-            'using %s' % context.format_fieldref(self.field),
-            'title "%s"' % self.title,
-            'axis %s' % self.axis]
+    args = [
+        f'"{context.datafile}"',
+        f'using {context.format_fieldref(self.field)}',
+        f'title "{self.title}"',
+        f'axis {self.axis}',
+    ]
     if 'style' in self.props:
-      args.append('with %s' % self.props['style'])
+      args.append(f"with {self.props['style']}")
     if 'lc' in self.props:
-      args.append('lc rgb "%s"' % self.props['lc'])
+      args.append(f"""lc rgb "{self.props['lc']}\"""")
     if 'fs' in self.props:
-      args.append('fs %s' % self.props['fs'])
+      args.append(f"fs {self.props['fs']}")
     return ' '.join(args)
 
 class Plot(object):
@@ -128,7 +127,7 @@ class Set(object):
     self.value = value
 
   def to_gnuplot(self, ctx):
-    return 'set ' + self.value
+    return f'set {self.value}'
 
   def fieldrefs(self):
     return []
@@ -159,7 +158,7 @@ def is_y2_used(plot):
   for subplot in plot:
     if isinstance(subplot, Plot):
       for item in subplot.items:
-        if item.axis == x1y2 or item.axis == x2y2:
+        if item.axis in [x1y2, x2y2]:
           return True
   return False
 
@@ -182,22 +181,18 @@ def generate_script_and_datafile(plot, trace, datafile, output):
   generate_datafile(datafile, trace, fields)
   script = [
       'set terminal png',
-      'set output "%s"' % output,
+      f'set output "{output}"',
       'set autoscale',
       'set ytics nomirror',
       'set xtics nomirror',
-      'set key below'
+      'set key below',
   ]
 
   if is_y2_used(plot):
-    script.append('set autoscale y2')
-    script.append('set y2tics')
-
+    script.extend(('set autoscale y2', 'set y2tics'))
   context = Context(datafile, field_to_index)
 
-  for item in plot:
-    script.append(item.to_gnuplot(context))
-
+  script.extend(item.to_gnuplot(context) for item in plot)
   return '\n'.join(script)
 
 def plot_all(plots, trace, prefix):
@@ -222,9 +217,7 @@ def other_scope(r):
   return r['pause'] - r['mark'] - r['sweep'] - r['external']
 
 def scavenge_scope(r):
-  if r['gc'] == 's':
-    return r['pause'] - r['external']
-  return 0
+  return r['pause'] - r['external'] if r['gc'] == 's' else 0
 
 
 def real_mutator(r):

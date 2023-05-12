@@ -105,11 +105,11 @@ class CalculateTagRevision(Step):
     """Finds the newest lkgr between min_rev (inclusive) and max_rev
     (exclusive).
     """
-    for lkgr in self["lkgrs"]:
-      # LKGRs are reverse sorted.
-      if int(min_rev) <= int(lkgr) and int(lkgr) < int(max_rev):
-        return lkgr
-    return None
+    return next(
+        (lkgr
+         for lkgr in self["lkgrs"] if int(min_rev) <= int(lkgr) < int(max_rev)),
+        None,
+    )
 
   def RunStep(self):
     # Get the lkgr after the tag candidate and before the next tag candidate.

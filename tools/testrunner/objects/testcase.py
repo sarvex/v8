@@ -82,4 +82,4 @@ class TestCase(object):
     return self.suite.name
 
   def GetLabel(self):
-    return self.suitename() + "/" + self.suite.CommonTestName(self)
+    return f"{self.suitename()}/{self.suite.CommonTestName(self)}"

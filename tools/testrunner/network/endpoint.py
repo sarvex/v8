@@ -73,9 +73,7 @@ class EndpointProgress(progress.ProgressIndicator):
       if keep_running and len(tests) < 1:
         continue  # Wait for more results.
       if len(tests) < 1: break  # We're done here.
-      result = []
-      for t in tests:
-        result.append(t.PackResult())
+      result = [t.PackResult() for t in tests]
       try:
         compression.Send(result, self.sock)
       except:

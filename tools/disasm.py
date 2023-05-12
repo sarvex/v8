@@ -58,8 +58,8 @@ def GetDisasmLines(filename, offset, size, arch, inplace, arch_flags=""):
   tmp_name = None
   if not inplace:
     # Create a temporary file containing a copy of the code.
-    assert arch in _ARCH_MAP, "Unsupported architecture '%s'" % arch
-    arch_flags = arch_flags + " " +  _ARCH_MAP[arch]
+    assert arch in _ARCH_MAP, f"Unsupported architecture '{arch}'"
+    arch_flags = f"{arch_flags} {_ARCH_MAP[arch]}"
     tmp_name = tempfile.mktemp(".v8code")
     command = "dd if=%s of=%s bs=1 count=%d skip=%d && " \
               "%s %s -D -b binary %s %s" % (
@@ -78,17 +78,13 @@ def GetDisasmLines(filename, offset, size, arch, inplace, arch_flags=""):
                              stderr=subprocess.STDOUT)
   out, err = process.communicate()
   lines = out.split("\n")
-  header_line = 0
-  for i, line in enumerate(lines):
-    if _DISASM_HEADER_RE.match(line):
-      header_line = i
-      break
+  header_line = next(
+      (i for i, line in enumerate(lines) if _DISASM_HEADER_RE.match(line)), 0)
   if tmp_name:
     os.unlink(tmp_name)
   split_lines = []
   for line in lines[header_line + 1:]:
-    match = _DISASM_LINE_RE.match(line)
-    if match:
+    if match := _DISASM_LINE_RE.match(line):
       line_address = int(match.group(1), 16)
       split_lines.append((line_address, match.group(2)))
   return split_lines
